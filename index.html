@@ -79,6 +79,7 @@
       border: 1px solid var(--border);
       background: var(--card);
       color: var(--text);
+      margin-left: 8px;
       padding: 8px 12px;
       border-radius: 8px;
       cursor: pointer;
@@ -135,7 +136,7 @@
       border: 1px solid var(--border);
       background: var(--card);
       color: var(--text);
-      padding: 8px 10px;
+      padding: 13px 10px;
       border-radius: 8px;
       cursor: pointer;
       font-family: "IBM Plex Mono", monospace;
@@ -400,7 +401,7 @@
       display: none;
       align-items: center;
       gap: 6px;
-      padding: 8px 10px;
+      padding: 13px 10px;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--card);
@@ -784,7 +785,11 @@
         flex-direction: column;
         align-items: stretch;
       }
+      .tree-stack {
+        order: 1;
+      }
       .tree-controls-card {
+        order: 2;
         width: 100%;
         flex: 1 1 100%;
         display: grid;
