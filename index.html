@@ -2515,6 +2515,17 @@
 
       const CONNECTOR_INSET = 14;
       const edgeAnimations = [];
+      // Keep branch splits close to child nodes even when columns are skipped.
+      const denseColumnGap = columnLabels.reduce((minGap, col, idx) => {
+        if (idx === 0) return minGap;
+        const gap = col.x - columnLabels[idx - 1].x;
+        if (!Number.isFinite(gap) || gap <= 0) return minGap;
+        return minGap === null || gap < minGap ? gap : minGap;
+      }, null);
+      const denseEdgeSpan = Number.isFinite(denseColumnGap)
+        ? Math.max(denseColumnGap - CONNECTOR_INSET * 2, 0)
+        : null;
+      const denseSplitOffset = denseEdgeSpan !== null ? denseEdgeSpan / 2 : null;
 
       edges.forEach((edge) => {
         const from = nodeLookup[edge.from];
@@ -2522,10 +2533,13 @@
         if (!from || !to) return;
         const startX = from.drawX + CONNECTOR_INSET;
         const endX = to.drawX - CONNECTOR_INSET;
-        const midX = (startX + endX) / 2;
+        const spanX = endX - startX;
+        const splitX = denseSplitOffset !== null && denseEdgeSpan !== null && spanX > denseEdgeSpan + 1
+          ? endX - denseSplitOffset
+          : startX + spanX / 2;
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         const edgeId = `${edge.from}->${edge.to}`;
-        const nextCoords = [startX, from.drawY, midX, from.drawY, midX, to.drawY, endX, to.drawY];
+        const nextCoords = [startX, from.drawY, splitX, from.drawY, splitX, to.drawY, endX, to.drawY];
         const nextD = buildEdgePath(nextCoords);
         path.classList.add("tree-edge");
         path.dataset.edgeId = edgeId;
