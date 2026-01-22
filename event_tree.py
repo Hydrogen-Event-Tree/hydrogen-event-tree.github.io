@@ -242,8 +242,8 @@ def create_event_tree(events, save = False, show_exclusion = False, filename = "
         "Jet fire",
         "VCE / Flash fire",
         "Plume",
+        "Explosion",
         "Fireball",
-        "Flash fire",
         "VCE / Flash fire",
         "Puff",
     ]

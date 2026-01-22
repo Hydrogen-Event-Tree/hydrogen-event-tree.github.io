@@ -235,15 +235,15 @@ def process_events(log = True, save_path=None):
 
     system_prompt = """Fill every field in the JSON schema. For each question not about barriers or exclusion, provide a boolean answer and an integer confidence from 0-10 (0 = no information in the description to decide; 10 = the description makes the chosen answer unquestionably clear). Schema: {continuous_release:boolean, continuous_release_confidence:int, immediate_ignition:boolean, immediate_ignition_confidence:int, barrier_stopped_immediate_ignition:boolean, delayed_ignition:boolean, delayed_ignition_confidence:int, barrier_stopped_delayed_ignition:boolean, confined_space:boolean, confined_space_confidence:int, exclude_not_pure_h2:boolean, exclude_not_gaseous_h2:boolean, exclude_no_loc:boolean}. Use the provided event details to decide.
 
-Continuous release rubric: Mark true if hydrogen flow persisted over time rather than a single brief discharge.
-Immediate ignition rubric: Mark true if ignition occurred at the moment of release or within seconds without delay.
-Delayed ignition rubric: Mark true if a flammable cloud formed and ignited after a noticeable delay from the release.
+Continuous release rubric: Mark true if hydrogen release persisted over time rather than a single brief discharge.
+Immediate ignition rubric: Mark true if ignition occurred at the moment of release or within seconds without delay or hydrogen accumulation in the surrounding environment.
+Delayed ignition rubric: Mark true if a flammable cloud or explosive mixture formed and ignited after a noticeable delay from the release.
 Barrier (immediate) rubric: If immediate_ignition is true, barrier_stopped_immediate_ignition must be false. If immediate_ignition is false, set barrier_stopped_immediate_ignition to true only when a barrier meaningfully prevented immediate ignition (e.g., ESD systems, isolation valves, emergency shutdowns); otherwise set it to false.
 Barrier (delayed) rubric: If delayed_ignition is true, barrier_stopped_delayed_ignition must be false. If delayed_ignition is false, set barrier_stopped_delayed_ignition to true only when a barrier meaningfully prevented delayed ignition (e.g., ESD, inerting, venting, isolation); otherwise set it to false.
 Confined space rubric: Mark true if the release occurred in an enclosed or poorly ventilated area that limits dispersion.
 Exclude not pure H2 rubric: Mark true if the release substance is a hydrogen mixture with significant non-hydrogen components or is not primarily hydrogen.
 Exclude not gaseous H2 rubric: Mark true if hydrogen was released in a non-gaseous state (e.g., liquid or solid hydrogen) or the release medium is not gaseous H2.
-Exclude no loss of containment rubric: Mark true when no hydrogen was released; set false if any amount of hydrogen actually leaked.
+Exclude no LOC rubric: Mark true when no hydrogen was released; set false if any amount of hydrogen actually leaked.
 """
 
     for _, row in tqdm(events.iterrows(), total=len(events), desc="Processing events"):
@@ -296,7 +296,7 @@ def load_events(path = "events.json"):
 if __name__ == "__main__":
     EVENTS_PATH = "events.json"
     
-    #events = process_events(save_path=EVENTS_PATH)
+    events = process_events(save_path=EVENTS_PATH)
 
     events = load_events(path=EVENTS_PATH)
     SAVE_FIGS = True
