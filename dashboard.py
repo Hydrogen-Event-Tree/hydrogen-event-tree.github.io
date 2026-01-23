@@ -18,6 +18,7 @@ def _load_events(path: str) -> list[dict[str, Any]]:
 
 
 def run(
+    models: str,
     events_path: str = "events.json",
     index_path: str = "index.html",
     host: str = "127.0.0.1",
@@ -26,6 +27,7 @@ def run(
 ) -> None:
     events = _load_events(events_path)
     index_html = _read_text(index_path)
+    base_dir = Path(index_path).resolve().parent
 
     class Handler(BaseHTTPRequestHandler):
         def _respond(self, code: int, content_type: str, body: str) -> None:
@@ -36,20 +38,33 @@ def run(
             self.end_headers()
             self.wfile.write(data)
 
+        def _respond_json_file(self, path: Path) -> None:
+            try:
+                payload = path.read_text(encoding="utf-8")
+            except FileNotFoundError:
+                self._respond(404, "text/plain; charset=utf-8", f"{path.name} not found.")
+            except OSError as exc:
+                self._respond(500, "text/plain; charset=utf-8", f"Unable to read {path.name}: {exc}")
+            else:
+                self._respond(200, "application/json; charset=utf-8", payload)
+
         def do_GET(self):  # type: ignore[override]
             if self.path in ("/", "/index.html"):
                 self._respond(200, "text/html; charset=utf-8", index_html)
                 return
 
             if self.path == "/events.json":
+                self._respond_json_file(Path(events_path))
+                return
+
+            if self.path.endswith(".json"):
+                requested = (base_dir / self.path.lstrip("/")).resolve()
                 try:
-                    payload = Path(events_path).read_text(encoding="utf-8")
-                except FileNotFoundError:
-                    self._respond(404, "text/plain; charset=utf-8", "events.json not found.")
-                except OSError as exc:
-                    self._respond(500, "text/plain; charset=utf-8", f"Unable to read events file: {exc}")
-                else:
-                    self._respond(200, "application/json; charset=utf-8", payload)
+                    requested.relative_to(base_dir)
+                except ValueError:
+                    self._respond(403, "text/plain; charset=utf-8", "Forbidden.")
+                    return
+                self._respond_json_file(requested)
                 return
 
             self._respond(404, "text/plain; charset=utf-8", "Not found.")

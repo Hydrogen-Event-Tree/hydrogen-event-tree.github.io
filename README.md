@@ -1,6 +1,6 @@
 <p align="center">
-  <img src="screenshot1" width="48.4%"/>
-  <img src="screenshot2" width="50.6%"/>
+  <img src="screenshot1.png" width="48.4%"/>
+  <img src="screenshot2.png" width="50.6%"/>
 </p>
 
 # H2 Event Tree
@@ -12,6 +12,24 @@ Obviously, we provide no guarantees about the correctness of any of the informat
 
 ## Implementation
 
-The dashboard is dependent on the existence of a `events.json` file in the same top-level folder as `index.html`. To generate this file, we run `main.py` which can call `process_events()` to read a `hiad.xlsx` file in the same folder and produce the `events.json` file. This function call can be skipped if the file is already in place. In that case, the script spins up a webserver on `localhost:4000` to serve the dashboard.
+The dashboard loads `events-manifest.json` in the same top-level folder as `index.html`. The manifest lists one or more model entries:
 
-To process the Excel sheet with `process_events()`, `ollama` needs to be installed. Both as a pip package and also as a service running on your computer (https://ollama.com/). Download a model and indicate it in the `get_llm()` functionn at the top of `main.py`.
+```json
+{
+  "models": [
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3-14B",
+      "events_path": "events-qwen3-14b.json",
+      "model": "qwen3:14b"
+    }
+  ],
+  "default_model_id": "qwen3-14b"
+}
+```
+
+Each `events_path` points to a JSON array produced by `main.py`. To generate (or refresh) these files, set `gen = 1` in `main.py`. It will run `process_events()` for every entry in `LLMS`, write `events-<id>.json` files, and rebuild `events-manifest.json`. If you already have the JSON files, leave `gen = 0` and the script will just start the webserver on `localhost:4000`.
+
+### Models
+
+Models are configured in `LLMS` at the top of `main.py`. For local inference, `ollama` must be installed both as a pip package and as a running service (https://ollama.com/). For OpenRouter-backed entries, set `OPENROUTER_API_KEY` in `main.py` before running the generator, and ensure the `openai` package is installed.

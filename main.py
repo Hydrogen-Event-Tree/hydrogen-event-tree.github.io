@@ -1,25 +1,37 @@
 import json
 import warnings
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from pandas import Series
 from tqdm import tqdm
+import ollama
+
+from openai import OpenAI
 
 from dashboard import run as run_dashboard
-from event_tree import create_event_tree
 
 FILE_PATH = "hiad.xlsx"
-GPTOSS = "gpt-oss:20b"
-COUNT = 2000
+COUNT = 2
 
-LLM_PROVIDER = "ollama"  # Set to "gemini" to use the Gemini API.
-SELECTED_LLM = GPTOSS
-LLM_THINKING = True
-GEMINI_MODEL = "gemini-3-flash-preview"
-GEMINI_API_KEY = ""
-_GEMINI_CLIENT = None
-_GEMINI_TYPES = None
+OPENROUTER_API_KEY = ""
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+LLMS = [
+    {
+        "id": "glm-4.7",
+        "name": "GLM-4.7",
+        "model": "z-ai/glm-4.7",
+        "provider": "openrouter",
+    },
+    {
+        "id": "deepseek-v3.2",
+        "name": "DeepSeek V3.2",
+        "model": "deepseek/deepseek-v3.2",
+        "provider": "openrouter",
+    },
+    {"id": "qwen3-14b", "name": "Qwen3-14B", "model": "qwen3:14b", "provider": "ollama"},
+    {"id": "gpt-oss-20b", "name": "gpt-oss-20b", "model": "gpt-oss:20b", "provider": "ollama"},
+]
 
 RESPONSE_SCHEMA = {
     "type": "object",
@@ -55,6 +67,15 @@ RESPONSE_SCHEMA = {
     ],
 }
 
+OPENROUTER_SCHEMA = {
+    "name": "event_tree_output",
+    "schema": {
+        **RESPONSE_SCHEMA,
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
 
 def _suppress_openpyxl_warnings():
     warnings.filterwarnings(
@@ -79,88 +100,102 @@ def _clean_value(value):
     return text or None
 
 
-def _gemini_client():
-    global _GEMINI_CLIENT, _GEMINI_TYPES
-    if _GEMINI_CLIENT is not None:
-        return _GEMINI_CLIENT, _GEMINI_TYPES
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "PASTE_GEMINI_API_KEY_HERE":
-        raise ValueError("Set GEMINI_API_KEY before using Gemini.")
+def _serialize_reasoning(value):
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
     try:
-        from google import genai
-        from google.genai import types
-    except ImportError as exc:
-        raise ImportError(
-            "Gemini selected but google-genai is not installed. Install with: pip install google-genai"
-        ) from exc
-    _GEMINI_CLIENT = genai.Client(api_key=GEMINI_API_KEY)
-    _GEMINI_TYPES = types
-    return _GEMINI_CLIENT, _GEMINI_TYPES
+        return json.dumps(value, ensure_ascii=True, indent=2)
+    except TypeError:
+        return str(value)
 
 
-def _selected_model():
-    if LLM_PROVIDER == "gemini":
-        return GEMINI_MODEL
-    return SELECTED_LLM
+def _ask_ollama(prompt: str, system_prompt: str, model: str):
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
 
-
-def _gemini_config(types, system_prompt: str | None):
-    thinking_level = "HIGH" if LLM_THINKING else "NONE"
-    return types.GenerateContentConfig(
-        system_instruction=system_prompt or "",
-        response_mime_type="application/json",
-        response_schema=RESPONSE_SCHEMA,
-        thinking_config=types.ThinkingConfig(thinking_level=thinking_level),
+    response = ollama.chat(
+        model=model,
+        think=True,
+        format=RESPONSE_SCHEMA,
+        messages=messages,
     )
 
-
-def ask(prompt: str, system_prompt: str | None = None):
-    if LLM_PROVIDER == "ollama":
-        import ollama
-
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-
-        response = ollama.chat(
-            model=SELECTED_LLM,
-            think=LLM_THINKING,
-            format=RESPONSE_SCHEMA,
-            messages=messages,
-        )
-
-        message = response.get("message", {})
-        content = message.get("content", "")
-        reasoning = (
-            message.get("thinking")
-            or message.get("reasoning")
-            or message.get("metadata", {}).get("thinking")
-            or response.get("thinking")
-            or response.get("metadata", {}).get("thinking")
-            or ""
-        )
-    elif LLM_PROVIDER == "gemini":
-        client, types = _gemini_client()
-        config = _gemini_config(types, system_prompt)
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=prompt,
-            config=config,
-        )
-        content = response.text or ""
-        if not content and getattr(response, "candidates", None):
-            candidate = response.candidates[0]
-            parts = getattr(candidate.content, "parts", []) if candidate.content else []
-            content = "".join(part.text for part in parts if getattr(part, "text", None))
-        reasoning = ""
-    else:
-        raise ValueError(f"Unknown LLM_PROVIDER: {LLM_PROVIDER}")
+    message = response.get("message", {})
+    content = message.get("content", "")
+    reasoning = (
+        message.get("thinking")
+        or message.get("reasoning")
+        or message.get("metadata", {}).get("thinking")
+        or response.get("thinking")
+        or response.get("metadata", {}).get("thinking")
+        or ""
+    )
+    reasoning = _serialize_reasoning(reasoning)
 
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError as exc:
         raise ValueError(f"LLM returned non-JSON content: {content}") from exc
     return parsed, reasoning
+
+
+def _ask_openrouter(prompt: str, system_prompt: str, model: str):
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    client = OpenAI(api_key=OPENROUTER_API_KEY, base_url=OPENROUTER_BASE_URL)
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        response_format={"type": "json_schema", "json_schema": OPENROUTER_SCHEMA},
+        extra_body={
+            "plugins": [{"id": "response-healing"}],
+            "include_reasoning": True,
+            "reasoning": {"enabled": True},
+        }
+    )
+    message = response.choices[0].message
+
+    if hasattr(message, "model_dump"):
+        payload = message.model_dump()
+        content = payload.get("content", "")
+        reasoning_details = payload.get("reasoning_details")
+        reasoning_text = payload.get("reasoning")
+    elif isinstance(message, dict):
+        content = message.get("content", "")
+        reasoning_details = message.get("reasoning_details")
+        reasoning_text = message.get("reasoning")
+    else:
+        content = getattr(message, "content", "")
+        reasoning_details = getattr(message, "reasoning_details", None)
+        reasoning_text = getattr(message, "reasoning", None)
+
+    reasoning = reasoning_details if reasoning_details is not None else reasoning_text or ""
+    reasoning = _serialize_reasoning(reasoning)
+
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"LLM returned non-JSON content: {content}") from exc
+    return parsed, reasoning
+
+
+def ask(prompt: str, system_prompt: str, model_config: dict):
+    provider = model_config.get("provider", "ollama")
+    model = model_config.get("model")
+    if not model:
+        raise ValueError(f"Invalid model config: {model_config!r}")
+    if provider == "openrouter":
+        return _ask_openrouter(prompt=prompt, system_prompt=system_prompt, model=model)
+    if provider == "ollama":
+        return _ask_ollama(prompt=prompt, system_prompt=system_prompt, model=model)
+    raise ValueError(f"Unsupported provider: {provider}")
 
 
 def read_enriched_events(path: str, n: int):
@@ -228,10 +263,11 @@ def build_event_markdown(row: Series) -> str:
     return "\n".join(sections)
 
 
-
-def process_events(log = True, save_path=None):
+def process_events(model_config, log=False, save_path=None):
     events = read_enriched_events(FILE_PATH, COUNT)
     results = []
+    if not isinstance(model_config, dict) or not model_config.get("model"):
+        raise ValueError(f"Invalid model config: {model_config!r}")
 
     system_prompt = """Fill every field in the JSON schema. For each question not about barriers or exclusion, provide a boolean answer and an integer confidence from 0-10 (0 = no information in the description to decide; 10 = the description makes the chosen answer unquestionably clear). Schema: {continuous_release:boolean, continuous_release_confidence:int, immediate_ignition:boolean, immediate_ignition_confidence:int, barrier_stopped_immediate_ignition:boolean, delayed_ignition:boolean, delayed_ignition_confidence:int, barrier_stopped_delayed_ignition:boolean, confined_space:boolean, confined_space_confidence:int, exclude_not_pure_h2:boolean, exclude_not_gaseous_h2:boolean, exclude_no_loc:boolean}. Use the provided event details to decide.
 
@@ -246,7 +282,12 @@ Exclude not gaseous H2 rubric: Mark true if hydrogen was released in a non-gaseo
 Exclude no LOC rubric: Mark true when no hydrogen was released; set false if any amount of hydrogen actually leaked.
 """
 
-    for _, row in tqdm(events.iterrows(), total=len(events), desc="Processing events"):
+    model_label = model_config.get("name") or model_config.get("model") or "model"
+    for _, row in tqdm(
+        events.iterrows(),
+        total=len(events),
+        desc=f"Processing events ({model_label})",
+    ):
         markdown = build_event_markdown(row)
         description = _clean_value(row.get("Event full description")) or "No description available."
         prompt = f"""Use the event details to determine the answers for each question.
@@ -258,15 +299,16 @@ Event details:
         if log:
             tqdm.write(markdown + "\n")
             tqdm.write("==========================================")
-        result, reasoning = ask(prompt=prompt, system_prompt=system_prompt)
+        result, reasoning = ask(prompt=prompt, system_prompt=system_prompt, model_config=model_config)
         record = {
             "event_id": _clean_value(row.get("Event ID")),
             "title": _clean_value(row.get("Event Title")) or "Untitled Event",
             "description": description,
             "user_prompt": prompt,
             "system_prompt": system_prompt,
-            "model": _selected_model(),
-            "thinking": LLM_THINKING,
+            "model": model_config["model"],
+            "model_id": model_config.get("id"),
+            "model_name": model_config.get("name"),
             "reasoning": reasoning,
         }
         record.update(result)
@@ -293,13 +335,24 @@ def load_events(path = "events.json"):
     return events
 
 
-if __name__ == "__main__":
-    EVENTS_PATH = "events.json"
-    
-    events = process_events(save_path=EVENTS_PATH)
+def save_events_manifest(models, default_model_id=None, path="events-manifest.json"):
+    payload = {"models": models}
+    if default_model_id is not None:
+        payload["default_model_id"] = default_model_id
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=True, indent=2)
 
-    events = load_events(path=EVENTS_PATH)
-    SAVE_FIGS = True
-    create_event_tree(events, save=SAVE_FIGS, show_exclusion=False, filename="event_tree.png")
-    create_event_tree(events, save=SAVE_FIGS, show_exclusion=True, filename="event_tree_exclusions.png")
-    run_dashboard(events_path=EVENTS_PATH, port=4000)
+
+if __name__ == "__main__":
+    gen = 1
+
+    if gen:
+        manifest = []
+        for model_config in LLMS:
+            events_path = f"events-{model_config['id']}.json"
+            results = process_events(model_config=model_config, save_path=events_path)
+            manifest.append({"id": model_config.get("id"), "name": model_config.get("name"), "events_path": events_path, "model": model_config.get("model")})
+
+        save_events_manifest(manifest, default_model_id=LLMS[0]["id"] if LLMS else None)
+
+    run_dashboard(models = LLMS, port=4000)

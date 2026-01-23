@@ -1115,6 +1115,42 @@
       color: var(--text);
       font-family: var(--title-font);
     }
+    .about-body p {
+      margin: 0 0 12px;
+    }
+    .about-body p:last-child {
+      margin-bottom: 0;
+    }
+    .about-model-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0 14px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .about-model-label {
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .about-model-select {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+    }
+    .about-model-meta {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+    }
     .about-body a {
       color: var(--accent);
       font-weight: 700;
@@ -1286,12 +1322,24 @@
         </h2>
         <button class="about-close" id="aboutClose" type="button" aria-label="Close">X</button>
       </div>
-      <p class="about-body">
-        This dashboard is fully based the data from <a href="https://minerva.jrc.ec.europa.eu/en/shorturl/capri/hiadpt" target="_blank">HIAD 2.1</a>, developed by the Joint Research Centre (JRC) of the European Commission, however they are not responsible for any of the data as displayed on this website and have not been involved in the production of the dashboard. We are thankful for their contributions and hope that this dashboard can help make their data even more accessible.<br><br>
-        On the website, we have attempted to make it clear that the "Model Answers" which underpin the event tree is based on the output of a large language model (LLM) asked to classify the events in HIAD. This approach, like any, is imperfect but we have attempted to counteract this by, e.g., incorporating notions of certainty in model answers.<br><br>
-        This dashboard was produced by Simon Halvdansson as part of the <a href="https://hydrogeni.no/" target="_blank">HYDROGENi</a> project at <a href="https://www.sintef.no/en/sintef-energy/" target="_blank">SINTEF Energy Research</a>. For additional details on the project which this dashboard is a part of, see the paper (link to be added) and <a href="https://github.com/SimonHalvdansson/H2-Event-Tree" target="_blank">GitHub repository</a>.
-        
-      </p>
+      <div class="about-body">
+        <p>
+          This dashboard is fully based the data from <a href="https://minerva.jrc.ec.europa.eu/en/shorturl/capri/hiadpt" target="_blank">HIAD 2.1</a>, developed by the Joint Research Centre (JRC) of the European Commission, however they are not responsible for any of the data as displayed on this website and have not been involved in the production of the dashboard. We are thankful for their contributions and hope that this dashboard can help make their data even more accessible.
+        </p>
+        <p>
+          On the website, we have attempted to make it clear that the "Model Answers" which underpin the event tree is based on the output of a large language model (LLM) asked to classify the events in HIAD. This approach, like any, is imperfect but we have attempted to counteract this by, e.g., incorporating notions of certainty in model answers.
+        </p>
+        <p>
+          This dashboard was produced by Simon Halvdansson as part of the <a href="https://hydrogeni.no/" target="_blank">HYDROGENi</a> project at <a href="https://www.sintef.no/en/sintef-energy/" target="_blank">SINTEF Energy Research</a>. For additional details on the project which this dashboard is a part of, see the paper (link to be added) and <a href="https://github.com/SimonHalvdansson/H2-Event-Tree" target="_blank">GitHub repository</a>.
+        </p>
+        <div class="about-model-row">
+          <span class="about-model-label">Model answers data</span>
+          <select id="modelSelect" class="about-model-select" aria-label="Select model dataset">
+            <option value="">Loading...</option>
+          </select>
+          <span class="about-model-meta" id="modelMeta">Loading model manifest...</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1303,6 +1351,11 @@
       { key: "confined_space", short: "CS", long: "Confined space" },
     ];
 
+    const DEFAULT_MODEL_ID = "gpt-oss-20b";
+
+    let manifestData = null;
+    let availableModels = [];
+    let activeModelId = null;
     let eventsData = [];
     let sortMode = "id";
     let selectedIndex = null;
@@ -2906,6 +2959,103 @@
       if (treeContainer) treeContainer.innerHTML = "";
     }
 
+    function normalizeModels(models) {
+      if (!Array.isArray(models)) return [];
+      return models.reduce((acc, model, index) => {
+        if (!model || typeof model !== "object") return acc;
+        const eventsPath = model.events_path || model.eventsPath;
+        if (!eventsPath) return acc;
+        const id = String(model.id || eventsPath || `model-${index + 1}`);
+        acc.push({ ...model, id, events_path: eventsPath });
+        return acc;
+      }, []);
+    }
+
+    function resolvePreferredModelId() {
+      const stored = localStorage.getItem("hiad-model");
+      if (stored && availableModels.some((model) => model.id === stored)) return stored;
+      if (availableModels.some((model) => model.id === DEFAULT_MODEL_ID)) return DEFAULT_MODEL_ID;
+      if (
+        manifestData &&
+        manifestData.default_model_id &&
+        availableModels.some((model) => model.id === manifestData.default_model_id)
+      ) {
+        return manifestData.default_model_id;
+      }
+      return availableModels.length ? availableModels[0].id : null;
+    }
+
+    function updateModelSelect() {
+      const select = document.getElementById("modelSelect");
+      if (!select) return;
+      select.innerHTML = "";
+      if (!availableModels.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No models available";
+        select.appendChild(option);
+        select.disabled = true;
+        return;
+      }
+      availableModels.forEach((model) => {
+        const option = document.createElement("option");
+        option.value = model.id;
+        option.textContent = model.name || model.id;
+        select.appendChild(option);
+      });
+      select.disabled = availableModels.length <= 1;
+      if (activeModelId) select.value = activeModelId;
+    }
+
+    function updateModelMeta() {
+      const meta = document.getElementById("modelMeta");
+      if (!meta) return;
+      const model = availableModels.find((item) => item.id === activeModelId);
+      if (!model) {
+        meta.textContent = "No model selected.";
+        return;
+      }
+      const name = model.name || model.id || "Unknown model";
+      const engine = model.model ? ` (${model.model})` : "";
+      const eventsPath = model.events_path || "events.json";
+      meta.textContent = `Active dataset: ${name}${engine}. Source: ${eventsPath}`;
+    }
+
+    async function loadEventsFromPath(path) {
+      try {
+        const response = await fetch(path, { cache: "no-cache" });
+        if (!response.ok) throw new Error(`Failed to load events: ${response.statusText}`);
+        eventsData = await response.json();
+        if (!Array.isArray(eventsData)) throw new Error(`${path} is not an array`);
+        if (eventsData.length === 0) {
+          setEmptyState(`No events found in ${path}.`);
+          return;
+        }
+        refreshList({ ensureSelection: true });
+        updateTree();
+      } catch (err) {
+        console.error(err);
+        setEmptyState(`Unable to load ${path}. Check the server output for details.`);
+      }
+    }
+
+    async function applyModelSelection(modelId, { persist = true } = {}) {
+      const model = availableModels.find((item) => item.id === modelId);
+      if (!model) {
+        setEmptyState("Selected model not found in the manifest.");
+        return;
+      }
+      activeModelId = model.id;
+      if (persist) {
+        localStorage.setItem("hiad-model", model.id);
+      }
+      updateModelSelect();
+      updateModelMeta();
+      activeTreeFilter = null;
+      selectedIndex = null;
+      await loadEventsFromPath(model.events_path);
+    }
+
     const listOverlayQuery = window.matchMedia("(max-width: 550px)");
 
     function setListOverlayOpen(open) {
@@ -2957,20 +3107,21 @@
     }
 
     async function loadEvents() {
+      setEmptyState("Loading events...");
       try {
-        const response = await fetch("events.json", { cache: "no-cache" });
-        if (!response.ok) throw new Error(`Failed to load events: ${response.statusText}`);
-        eventsData = await response.json();
-        if (!Array.isArray(eventsData)) throw new Error("events.json is not an array");
-        if (eventsData.length === 0) {
-          setEmptyState("No events found in events.json.");
-          return;
-        }
-        refreshList({ ensureSelection: true });
-        updateTree();
+        const response = await fetch("events-manifest.json", { cache: "no-cache" });
+        if (!response.ok) throw new Error(`Failed to load manifest: ${response.statusText}`);
+        manifestData = await response.json();
+        availableModels = normalizeModels(manifestData.models);
+        if (!availableModels.length) throw new Error("No models listed in manifest.");
+        const preferredId = resolvePreferredModelId();
+        if (!preferredId) throw new Error("No default model available.");
+        await applyModelSelection(preferredId, { persist: false });
       } catch (err) {
         console.error(err);
-        setEmptyState("Unable to load events.json. Check the server output for details.");
+        setEmptyState("Unable to load events-manifest.json. Check the server output for details.");
+        updateModelSelect();
+        updateModelMeta();
       }
     }
 
@@ -2993,6 +3144,14 @@
       if (aboutOverlay) {
         aboutOverlay.addEventListener("click", () => {
           setAboutOpen(false);
+        });
+      }
+      const modelSelect = document.getElementById("modelSelect");
+      if (modelSelect) {
+        modelSelect.addEventListener("change", (e) => {
+          const nextId = e.target.value;
+          if (!nextId || nextId === activeModelId) return;
+          applyModelSelection(nextId);
         });
       }
       document.addEventListener("keydown", (event) => {

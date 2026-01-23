@@ -1,0 +1,29 @@
+{
+  "models": [
+    {
+      "id": "glm-4.7",
+      "name": "GLM-4.7",
+      "events_path": "events-glm-4.7.json",
+      "model": "z-ai/glm-4.7"
+    },
+    {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "events_path": "events-deepseek-v3.2.json",
+      "model": "deepseek/deepseek-v3.2"
+    },
+    {
+      "id": "qwen3-14b",
+      "name": "Qwen3-14B",
+      "events_path": "events-qwen3-14b.json",
+      "model": "qwen3:14b"
+    },
+    {
+      "id": "gpt-oss-20b",
+      "name": "gpt-oss-20b",
+      "events_path": "events-gpt-oss-20b.json",
+      "model": "gpt-oss:20b"
+    }
+  ],
+  "default_model_id": "glm-4.7"
+}
