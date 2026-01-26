@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Hydrogen Safety Event Tree</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1e293b;
+            --stroke: #334155;
+            --bg: #ffffff;
+            
+            /* Palette */
+            --c-db: #e2e8f0;       /* Database Grey */
+            --c-process: #fef3c7;  /* Process Sand */
+            --c-tree-node: #ddf2fb;  /* Tree Mist */
+            --c-schema: #d6dcff;     /* Schema Periwinkle */
+            --c-llm: #f3e8ff;      /* LLM Purple */
+            --c-out: #dcfce7;      /* Output Green */
+            --c-tree: #ffe4e6;     /* Final Tree Rose */
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: 'Manrope', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .canvas {
+            position: relative;
+            width: 1480px;
+            height: 700px;
+            background: #fff;
+            overflow: hidden; /* Hide overflow */
+        }
+
+        /* --- SVG Connectors --- */
+        .svg-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* --- Nodes Common Styles --- */
+        .node {
+            position: absolute;
+            left: var(--x);
+            top: var(--y);
+            width: var(--w);
+            background: #fff;
+            border: 2px solid var(--stroke);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.08);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .node-header {
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--ink);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            background: rgba(255,255,255,0.5);
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px dashed var(--stroke);
+            color: #475569;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+
+        .code-block.tiny {
+            font-size: 7px;
+            line-height: 1.2;
+        }
+
+        .code-block.small {
+            font-size: 8px;
+            line-height: 1.25;
+        }
+
+        /* --- Specific Node Styling --- */
+        
+        /* 1. Database & Events */
+        #node-hiad { background: var(--c-db); }
+
+        /* 2. Logic / Schema */
+        #node-tree { background: var(--c-tree-node); }
+        #node-schema { background: var(--c-schema); }
+        #node-result-tree { background: var(--c-tree-node); }
+        #node-dashboard { background: var(--c-db); }
+        
+        /* 3. Inputs */
+        #node-md { background: var(--c-process); }
+
+        /* 4. The Brain */
+        #node-llm { 
+            background: var(--c-llm); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            text-align: center;
+        }
+        .llm-stack { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+        .llm-title { font-size: 17px; font-weight: 900; letter-spacing: 1px; }
+        .llm-logos { display: flex; gap: 12px; align-items: center; justify-content: center; }
+        .llm-logo { height: 26px; width: auto; }
+
+        .header-icon { margin-left: auto; height: 16px; width: auto; }
+        .header-icon.tree { height: 19px; }
+        .header-icon.tree { transform: rotate(-90deg); }
+        .header-icon.db { height: 18px; }
+        .trace-chip { font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+
+        /* 5. Output */
+        #node-json { background: var(--c-out); }
+
+        /* 6. Visualization */
+        #node-final { background: var(--c-tree); }
+        
+        .tree-frame {
+            display: block;
+            width: 100%;
+            height: 140px;
+            border: 1px dashed var(--stroke);
+            border-radius: 6px;
+            background: #fff;
+            padding: 4px;
+        }
+
+        .tree-image-fallback {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            padding: 0;
+        }
+
+        .ellipsis {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .trace-plus {
+            font-size: 12px;
+            line-height: 1;
+            margin-right: 2px;
+        }
+
+        .result-node { opacity: 1; }
+
+        /* Confidence Bars */
+        .conf-bar {
+            height: 4px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+        .conf-fill { height: 100%; background: #10b981; width: 90%; }
+
+    </style>
+</head>
+<body>
+
+    <div class="canvas">
+        <svg class="svg-layer" width="100%" height="100%">
+            <defs>
+                <marker id="arrow" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto" markerUnits="strokeWidth">
+                    <path d="M0,0 L0,4 L4,2 z" fill="#334155" />
+                </marker>
+            </defs>
+
+            <path d="M 260 190 L 280 190" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+            
+            <path d="M 260 455 L 280 455" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+
+            <path d="M 540 190 C 590 190, 590 315, 630 315" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            
+            <path d="M 540 455 C 590 455, 590 340, 630 340" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+
+            <rect x="550" y="220" width="70" height="34" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
+            <text x="585" y="234" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
+                <tspan x="585" dy="0">User</tspan>
+                <tspan x="585" dy="15">Message</tspan>
+            </text>
+            <rect x="550" y="380" width="70" height="34" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
+            <text x="585" y="394" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
+                <tspan x="585" dy="0">System</tspan>
+                <tspan x="585" dy="15">Prompt</tspan>
+            </text>
+
+            <path d="M 790 325 L 840 325" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+
+            <path d="M 1100 300 C 1120 300, 1120 175, 1160 175" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <path d="M 1100 365 C 1120 365, 1120 430, 1160 430" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+
+        </svg>
+
+        <div class="node" id="node-hiad" style="--x: 30px; --y: 50px; --w: 230px;">
+            <div class="node-header">
+                <span>HIAD 2.1</span>
+                <img src="overview_images/hiad.svg" alt="HIAD" class="header-icon db">
+            </div>
+            <div style="font-size: 12px; font-weight: 600; text-align: center; margin-top: -3px;">954 Events</div>
+            <div class="code-block" style="background: rgba(255,255,255,0.7);">
+                ID: 10<br>
+                Desc: Hindenburg fire...<br>
+                Substance: GH2...
+            </div>
+            <div class="code-block" style="background: rgba(255,255,255,0.4);">ID: 103...</div>
+            <div class="code-block" style="background: rgba(255,255,255,0.2);">ID: 104...</div>
+            <div class="ellipsis">...</div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: right;">hiad.xlsx</div>
+        </div>
+
+        <div class="node" id="node-tree" style="--x: 30px; --y: 330px; --w: 230px;">
+            <div class="node-header">
+                <span>Event tree design</span>
+                <img src="overview_images/tree.svg" alt="Tree" class="header-icon tree">
+            </div>
+            <img src="overview_images/event_tree_blue_v2.png" alt="Event tree design" class="tree-image-fallback">
+        </div>
+
+        <div class="node" id="node-md" style="--x: 280px; --y: 75px; --w: 260px;">
+            <div class="node-header">
+                <span>Event Encoder</span>
+                <img src="overview_images/markdown.png" alt="Markdown" class="header-icon">
+            </div>
+            <div class="code-block small">
+                # Fire of the Zeppelin LZ 129 "Hindenburg"<br>
+                ## Key Facts<br>
+                - **Event ID:** 10<br>
+                - **Q:** 5<br>
+                - **Event Initiating system:** Hydrogen system initiating event<br>
+                - **Classification of the physical effects:** Hydrogen release and ignition<br>
+                - **Nature of the consequences:** Fire<br>
+                - **Region:** North America<br>
+                - **Country:** UNITED STATES<br>
+                - **Date:** 1937-06-05 00:00:00
+            </div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: right;">details.md</div>
+        </div>
+
+        <div class="node" id="node-schema" style="--x: 280px; --y: 332px; --w: 260px;">
+            <div class="node-header">
+                <span>JSON Schema</span>
+                <img src="overview_images/json.svg" alt="JSON" class="header-icon">
+            </div>
+            <div class="code-block tiny">
+                {<br>
+                &nbsp;&nbsp;"continuous_release": {"type": "boolean"},<br>
+                &nbsp;&nbsp;"continuous_release_confidence": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"type": "integer",<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"minimum": 0,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"maximum": 10<br>
+                &nbsp;&nbsp;},<br>
+                &nbsp;&nbsp;"immediate_ignition": {"type": "boolean"},<br>
+                &nbsp;&nbsp;"immediate_ignition_confidence": {<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"type": "integer",<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"minimum": 0,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;"maximum": 10<br>
+                &nbsp;&nbsp;},<br>
+                &nbsp;&nbsp;"exclude_not_pure_h2": {"type": "boolean"},<br>
+                &nbsp;&nbsp;"exclude_not_gaseous_h2": {"type": "boolean"},<br>
+                &nbsp;&nbsp;"exclude_no_loc": {"type": "boolean"}<br>
+                &nbsp;&nbsp;...<br>
+                }
+            </div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: left;">Encode as enforceable schema</div>
+        </div>
+
+        <div class="node" id="node-llm" style="--x: 630px; --y: 265px; --w: 160px; height: 130px;">
+            <div class="llm-stack">
+                <div class="llm-title">Large Language Model</div>
+                <div class="llm-logos">
+                    <img src="overview_images/openai.svg" alt="OpenAI" class="llm-logo">
+                    <img src="overview_images/qwen.webp" alt="Qwen" class="llm-logo">
+                    <img src="overview_images/gemini.svg" alt="Gemini" class="llm-logo">
+                </div>
+            </div>
+        </div>
+
+        <div class="node" id="node-json" style="--x: 840px; --y: 180px; --w: 260px;">
+            <div class="node-header">Classified Event List</div>
+            <div class="code-block tiny" style="color: #064e3b;">
+                [<br>
+                &nbsp;{<br>
+                &nbsp;&nbsp;"event_id": "10",<br>
+                &nbsp;&nbsp;"title": "Hindenburg fire",<br>
+                &nbsp;&nbsp;"continuous_release": true,<br>
+                &nbsp;&nbsp;"immediate_ignition": false,<br>
+                &nbsp;&nbsp;"delayed_ignition": true,<br>
+                &nbsp;&nbsp;...<br>
+                &nbsp;},<br>
+                &nbsp;{<br>
+                &nbsp;&nbsp;"event_id": "11",<br>
+                &nbsp;&nbsp;"title": "Pipeline hydrogen fire",<br>
+                &nbsp;&nbsp;"continuous_release": true,<br>
+                &nbsp;&nbsp;"immediate_ignition": true,<br>
+                &nbsp;&nbsp;"delayed_ignition": false,<br>
+                &nbsp;&nbsp;...<br>
+                &nbsp;},<br>
+                &nbsp;...<br>
+                ]
+            </div>
+             <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 6px; align-items: flex-start;">
+                <span class="trace-chip" style="font-size: 10px; background: rgba(214,220,255,0.4); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(214,220,255,0.7); box-shadow: 0 0 3px rgba(214,220,255,0.35);"><span class="trace-plus">+</span>Reasoning traces</span>
+                <span class="trace-chip" style="font-size: 10px; background: rgba(214,220,255,0.4); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(214,220,255,0.7); box-shadow: 0 0 3px rgba(214,220,255,0.35);"><span class="trace-plus">+</span>Answer confidences</span>
+                <span class="trace-chip" style="font-size: 10px; background: rgba(214,220,255,0.4); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(214,220,255,0.7); box-shadow: 0 0 3px rgba(214,220,255,0.35);"><span class="trace-plus">+</span>Exclusion recommendation</span>
+            </div>
+        </div>
+
+        <div class="node result-node" id="node-result-tree" style="--x: 1160px; --y: 50px; --w: 230px;">
+            <div class="node-header">Uncertainty-quantified event tree</div>
+            <img src="overview_images/full_tree.png" alt="Uncertainty quantified event tree" class="tree-image-fallback">
+        </div>
+
+        <div class="node result-node" id="node-dashboard" style="--x: 1160px; --y: 320px; --w: 230px;">
+            <div class="node-header">Details dashboard</div>
+            <img src="overview_images/dashboard.png" alt="Details dashboard" class="tree-image-fallback">
+        </div>
+
+    </div>
+
+</body>
+</html>
