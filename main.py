@@ -1,5 +1,7 @@
 import json
+import os
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 from pandas import Series
@@ -7,28 +9,32 @@ from tqdm import tqdm
 import ollama
 
 from openai import OpenAI
+from google import genai
+from google.genai import types
 
 from dashboard import run as run_dashboard
 
 FILE_PATH = "hiad.xlsx"
-COUNT = 2
+COUNT = 1000
+DEFAULT_MAX_WORKERS = 8
 
-OPENROUTER_API_KEY = ""
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+OPENROUTER_API_KEY = ""
+GEMINI_API_KEY = ""
 
 LLMS = [
     {
-        "id": "glm-4.7",
-        "name": "GLM-4.7",
-        "model": "z-ai/glm-4.7",
-        "provider": "openrouter",
+        "id": "gemini-3-flash",
+        "name": "Gemini 3 Flash",
+        "model": "gemini-3-flash-preview",
+        "provider": "google-ai-studio",
     },
-    {
-        "id": "deepseek-v3.2",
-        "name": "DeepSeek V3.2",
-        "model": "deepseek/deepseek-v3.2",
-        "provider": "openrouter",
-    },
+    #{
+    #    "id": "deepseek-v3.2",
+    #    "name": "DeepSeek V3.2",
+    #    "model": "deepseek/deepseek-v3.2",
+    #    "provider": "openrouter",
+    #},
     {"id": "qwen3-14b", "name": "Qwen3-14B", "model": "qwen3:14b", "provider": "ollama"},
     {"id": "gpt-oss-20b", "name": "gpt-oss-20b", "model": "gpt-oss:20b", "provider": "ollama"},
 ]
@@ -75,6 +81,64 @@ OPENROUTER_SCHEMA = {
     },
     "strict": True,
 }
+
+
+def _build_genai_response_schema():
+    properties = {}
+    for name, spec in RESPONSE_SCHEMA["properties"].items():
+        schema_type = spec.get("type")
+        if schema_type == "boolean":
+            properties[name] = types.Schema(type=types.Type.BOOLEAN)
+        elif schema_type == "integer":
+            properties[name] = types.Schema(
+                type=types.Type.INTEGER,
+                minimum=spec.get("minimum"),
+                maximum=spec.get("maximum"),
+            )
+        else:
+            raise ValueError(f"Unsupported schema type: {schema_type}")
+    return types.Schema(
+        type=types.Type.OBJECT,
+        properties=properties,
+        required=RESPONSE_SCHEMA.get("required", []),
+    )
+
+
+def _parse_genai_response(response):
+    parsed = getattr(response, "parsed", None)
+    if parsed is not None:
+        if hasattr(parsed, "model_dump"):
+            return parsed.model_dump(), ""
+        if isinstance(parsed, dict):
+            return parsed, ""
+        return parsed, ""
+
+    candidates = getattr(response, "candidates", None) or []
+    parts = []
+    if candidates:
+        content = getattr(candidates[0], "content", None)
+        parts = getattr(content, "parts", None) or []
+
+    text_parts = []
+    reasoning_parts = []
+    for part in parts:
+        text = getattr(part, "text", None)
+        if not text:
+            continue
+        if getattr(part, "thought", False):
+            reasoning_parts.append(text)
+        else:
+            text_parts.append(text)
+
+    text = "".join(text_parts).strip()
+    reasoning = "\n".join(reasoning_parts).strip()
+    if not text:
+        raise ValueError("LLM returned no text content.")
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"LLM returned non-JSON content: {text}") from exc
+    return parsed, reasoning
 
 
 def _suppress_openpyxl_warnings():
@@ -160,6 +224,7 @@ def _ask_openrouter(prompt: str, system_prompt: str, model: str):
             "reasoning": {"enabled": True},
         }
     )
+
     message = response.choices[0].message
 
     if hasattr(message, "model_dump"):
@@ -186,6 +251,33 @@ def _ask_openrouter(prompt: str, system_prompt: str, model: str):
     return parsed, reasoning
 
 
+def _ask_google_ai_studio(prompt: str, system_prompt: str, model: str):
+    if not GEMINI_API_KEY:
+        raise ValueError("Missing GEMINI_API_KEY for Google AI Studio.")
+
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    config = types.GenerateContentConfig(
+        systemInstruction=system_prompt or None,
+        thinkingConfig=types.ThinkingConfig(thinkingLevel=types.ThinkingLevel.MEDIUM),
+        responseMimeType="application/json",
+        responseSchema=_build_genai_response_schema(),
+    )
+    contents = [
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=prompt)],
+        )
+    ]
+
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config,
+    )
+
+    return _parse_genai_response(response)
+
+
 def ask(prompt: str, system_prompt: str, model_config: dict):
     provider = model_config.get("provider", "ollama")
     model = model_config.get("model")
@@ -193,6 +285,8 @@ def ask(prompt: str, system_prompt: str, model_config: dict):
         raise ValueError(f"Invalid model config: {model_config!r}")
     if provider == "openrouter":
         return _ask_openrouter(prompt=prompt, system_prompt=system_prompt, model=model)
+    if provider == "google-ai-studio":
+        return _ask_google_ai_studio(prompt=prompt, system_prompt=system_prompt, model=model)
     if provider == "ollama":
         return _ask_ollama(prompt=prompt, system_prompt=system_prompt, model=model)
     raise ValueError(f"Unsupported provider: {provider}")
@@ -263,6 +357,40 @@ def build_event_markdown(row: Series) -> str:
     return "\n".join(sections)
 
 
+def _prepare_event_record(row: Series, system_prompt: str, model_config: dict):
+    markdown = build_event_markdown(row)
+    description = _clean_value(row.get("Event full description")) or "No description available."
+    prompt = f"""Use the event details to determine the answers for each question.
+
+Event details:
+
+{markdown}
+"""
+    record = {
+        "event_id": _clean_value(row.get("Event ID")),
+        "title": _clean_value(row.get("Event Title")) or "Untitled Event",
+        "description": description,
+        "user_prompt": prompt,
+        "system_prompt": system_prompt,
+        "model": model_config["model"],
+        "model_id": model_config.get("id"),
+        "model_name": model_config.get("name"),
+        "reasoning": "",
+    }
+    return record, markdown
+
+
+def _run_model_request(record: dict, model_config: dict):
+    result, reasoning = ask(
+        prompt=record["user_prompt"],
+        system_prompt=record["system_prompt"],
+        model_config=model_config,
+    )
+    record["reasoning"] = reasoning
+    record.update(result)
+    return record, result
+
+
 def process_events(model_config, log=False, save_path=None):
     events = read_enriched_events(FILE_PATH, COUNT)
     results = []
@@ -283,40 +411,48 @@ Exclude no LOC rubric: Mark true when no hydrogen was released; set false if any
 """
 
     model_label = model_config.get("name") or model_config.get("model") or "model"
-    for _, row in tqdm(
-        events.iterrows(),
-        total=len(events),
-        desc=f"Processing events ({model_label})",
-    ):
-        markdown = build_event_markdown(row)
-        description = _clean_value(row.get("Event full description")) or "No description available."
-        prompt = f"""Use the event details to determine the answers for each question.
+    provider = model_config.get("provider", "ollama")
+    if provider in ("openrouter", "google-ai-studio"):
+        max_workers = model_config.get("max_workers") or DEFAULT_MAX_WORKERS
+        results_by_index = [None] * len(events)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {}
+            for idx, (_, row) in enumerate(events.iterrows()):
+                record, markdown = _prepare_event_record(row, system_prompt, model_config)
+                if log:
+                    tqdm.write(markdown + "\n")
+                    tqdm.write("==========================================")
+                futures[executor.submit(_run_model_request, record, model_config)] = idx
 
-Event details:
+            with tqdm(
+                total=len(events),
+                desc=f"Processing events ({model_label})",
+            ) as progress:
+                for future in as_completed(futures):
+                    idx = futures[future]
+                    record, result = future.result()
+                    results_by_index[idx] = record
+                    if log:
+                        tqdm.write(str(result))
+                        tqdm.write("==========================================")
+                    progress.update(1)
+        results = results_by_index
+    else:
+        for _, row in tqdm(
+            events.iterrows(),
+            total=len(events),
+            desc=f"Processing events ({model_label})",
+        ):
+            record, markdown = _prepare_event_record(row, system_prompt, model_config)
+            if log:
+                tqdm.write(markdown + "\n")
+                tqdm.write("==========================================")
+            record, result = _run_model_request(record, model_config)
+            results.append(record)
 
-{markdown}
-"""
-        if log:
-            tqdm.write(markdown + "\n")
-            tqdm.write("==========================================")
-        result, reasoning = ask(prompt=prompt, system_prompt=system_prompt, model_config=model_config)
-        record = {
-            "event_id": _clean_value(row.get("Event ID")),
-            "title": _clean_value(row.get("Event Title")) or "Untitled Event",
-            "description": description,
-            "user_prompt": prompt,
-            "system_prompt": system_prompt,
-            "model": model_config["model"],
-            "model_id": model_config.get("id"),
-            "model_name": model_config.get("name"),
-            "reasoning": reasoning,
-        }
-        record.update(result)
-        results.append(record)
-
-        if log:
-            tqdm.write(str(result))
-            tqdm.write("==========================================")
+            if log:
+                tqdm.write(str(result))
+                tqdm.write("==========================================")
 
     if save_path is not None:
         save_events(results, path=save_path)

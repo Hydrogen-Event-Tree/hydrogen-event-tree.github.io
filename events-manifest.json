@@ -1,10 +1,10 @@
 {
   "models": [
     {
-      "id": "glm-4.7",
-      "name": "GLM-4.7",
-      "events_path": "events-glm-4.7.json",
-      "model": "z-ai/glm-4.7"
+      "id": "gemini-3-flash",
+      "name": "Gemini 3 Flash",
+      "events_path": "events-gemini-3-flash.json",
+      "model": "gemini-3-flash-preview"
     },
     {
       "id": "deepseek-v3.2",
@@ -25,5 +25,5 @@
       "model": "gpt-oss:20b"
     }
   ],
-  "default_model_id": "glm-4.7"
+  "default_model_id": "gemini-3-flash"
 }
