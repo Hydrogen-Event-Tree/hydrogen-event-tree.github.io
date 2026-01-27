@@ -481,7 +481,7 @@ def save_events_manifest(models, default_model_id=None, path="events-manifest.js
 
 
 if __name__ == "__main__":
-    gen = 1
+    gen = 0
 
     if gen:
         manifest = []

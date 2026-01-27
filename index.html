@@ -739,6 +739,9 @@
       .tree-node {
         width: 78px;
       }
+      .tree-node.is-outcome {
+        font-size: 9px;
+      }
       .tree-node.with-distribution {
         width: 83px;
       }
@@ -758,6 +761,9 @@
       .tree-node {
         width: 65px;
       }
+      .tree-node.is-outcome {
+        font-size: 8px;
+      }
       .tree-node.with-distribution {
         width: 65px;
       }
@@ -769,6 +775,9 @@
       .tree-node {
         width: 63px;
         font-size: 9px;
+      }
+      .tree-node.is-outcome {
+        font-size: 8px;
       }
       .tree-node.with-distribution {
         width: 63px;
@@ -1121,6 +1130,18 @@
     .about-body p:last-child {
       margin-bottom: 0;
     }
+    .model-data-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--badge-bg);
+    }
+    .model-data-select {
+      width: 100%;
+    }
     .about-model-row {
       display: flex;
       flex-wrap: wrap;
@@ -1292,6 +1313,14 @@
                 </label>
               </div>
             </div>
+            <div class="control-block">
+              <div class="control-label">Model data</div>
+              <div class="model-data-row">
+                <select class="about-model-select model-data-select js-model-select" aria-label="Select model dataset">
+                  <option value="">Loading...</option>
+                </select>
+              </div>
+            </div>
             <div class="controls-disclaimer">
               Probabilities reflect HIAD responses, not real-world frequencies. Under-reporting or data gaps may make some accident types appear rarer/more frequent here than they are in reality.
             </div>
@@ -1334,10 +1363,10 @@
         </p>
         <div class="about-model-row">
           <span class="about-model-label">Model answers data</span>
-          <select id="modelSelect" class="about-model-select" aria-label="Select model dataset">
+          <select id="modelSelect" class="about-model-select js-model-select" aria-label="Select model dataset">
             <option value="">Loading...</option>
           </select>
-          <span class="about-model-meta" id="modelMeta">Loading model manifest...</span>
+          <span class="about-model-meta js-model-meta" id="modelMeta">Loading model manifest...</span>
         </div>
       </div>
     </div>
@@ -2657,6 +2686,7 @@
         const hasProbability = node.type !== "outcome" && node.parent;
         const showMetaCount = showCounts && isRoot;
         if (isRoot) el.classList.add("tree-root");
+        if (isOutcome) el.classList.add("is-outcome");
 
         let titleLine = baseTitle;
         const detailParts = [];
@@ -2823,7 +2853,6 @@
       const details = document.getElementById("details");
       const model = escapeHtml(ev.model || "unknown");
       const outcome = escapeHtml(ev.outcome || inferOutcome(ev) || "");
-      const thinking = ev.thinking ? "Enabled" : "Disabled";
       const sys = escapeHtml(ev.system_prompt || "N/A");
       const userPrompt = escapeHtml(ev.user_prompt || "No prompt captured.");
       const reasoning = escapeHtml(ev.reasoning || "No reasoning trace captured.");
@@ -2845,10 +2874,17 @@
           <div class="pill">Event ID: <span class="pill-value">${escapeHtml(ev.event_id || "N/A")}</span></div>
           ${outcome ? `<div class="pill">Outcome: <span class="pill-value">${outcome}</span></div>` : ""}
           <div class="pill">Model: <span class="pill-value">${model}</span></div>
-          <div class="pill">Thinking: <span class="pill-value">${thinking}</span></div>
           <div class="card-section">
             <h2>Event Description</h2>
             <pre>${description}</pre>
+          </div>
+          <div class="card-section">
+            <h2>Model data</h2>
+            <div class="model-data-row">
+              <select class="about-model-select model-data-select js-model-select" aria-label="Select model dataset">
+                <option value="">Loading...</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="card">
@@ -2868,6 +2904,8 @@
           <pre>${reasoning}</pre>
         </div>
       `;
+      updateModelSelect();
+      updateModelMeta();
       if (prev !== idx) {
         details.classList.remove("details-animate");
         // Force reflow so the animation restarts on each selection.
@@ -2986,39 +3024,45 @@
     }
 
     function updateModelSelect() {
-      const select = document.getElementById("modelSelect");
-      if (!select) return;
-      select.innerHTML = "";
-      if (!availableModels.length) {
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "No models available";
-        select.appendChild(option);
-        select.disabled = true;
-        return;
-      }
-      availableModels.forEach((model) => {
-        const option = document.createElement("option");
-        option.value = model.id;
-        option.textContent = model.name || model.id;
-        select.appendChild(option);
+      const selects = document.querySelectorAll(".js-model-select");
+      if (!selects.length) return;
+      selects.forEach((select) => {
+        select.innerHTML = "";
+        if (!availableModels.length) {
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = "No models available";
+          select.appendChild(option);
+          select.disabled = true;
+          return;
+        }
+        availableModels.forEach((model) => {
+          const option = document.createElement("option");
+          option.value = model.id;
+          option.textContent = model.name || model.id;
+          select.appendChild(option);
+        });
+        select.disabled = availableModels.length <= 1;
+        if (activeModelId) select.value = activeModelId;
       });
-      select.disabled = availableModels.length <= 1;
-      if (activeModelId) select.value = activeModelId;
     }
 
     function updateModelMeta() {
-      const meta = document.getElementById("modelMeta");
-      if (!meta) return;
+      const metas = document.querySelectorAll(".js-model-meta");
+      if (!metas.length) return;
       const model = availableModels.find((item) => item.id === activeModelId);
       if (!model) {
-        meta.textContent = "No model selected.";
+        metas.forEach((meta) => {
+          meta.textContent = "No model selected.";
+        });
         return;
       }
       const name = model.name || model.id || "Unknown model";
       const engine = model.model ? ` (${model.model})` : "";
       const eventsPath = model.events_path || "events.json";
-      meta.textContent = `Active dataset: ${name}${engine}. Source: ${eventsPath}`;
+      metas.forEach((meta) => {
+        meta.textContent = `Active dataset: ${name}${engine}. Source: ${eventsPath}`;
+      });
     }
 
     async function loadEventsFromPath(path) {
@@ -3146,14 +3190,13 @@
           setAboutOpen(false);
         });
       }
-      const modelSelect = document.getElementById("modelSelect");
-      if (modelSelect) {
-        modelSelect.addEventListener("change", (e) => {
-          const nextId = e.target.value;
-          if (!nextId || nextId === activeModelId) return;
-          applyModelSelection(nextId);
-        });
-      }
+      document.addEventListener("change", (event) => {
+        const select = event.target.closest(".js-model-select");
+        if (!select) return;
+        const nextId = select.value;
+        if (!nextId || nextId === activeModelId) return;
+        applyModelSelection(nextId);
+      });
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && document.body.getAttribute("data-about-open") === "true") {
           setAboutOpen(false);
