@@ -72,7 +72,7 @@
 
         .node-header {
             font-weight: 700;
-            font-size: 14px;
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--ink);
@@ -129,7 +129,7 @@
             text-align: center;
         }
         .llm-stack { display: flex; flex-direction: column; gap: 6px; align-items: center; }
-        .llm-title { font-size: 17px; font-weight: 900; letter-spacing: 1px; }
+        .llm-title { font-size: 19px; font-weight: 900; letter-spacing: 1px; }
         .llm-logos { display: flex; gap: 12px; align-items: center; justify-content: center; }
         .llm-logo { height: 26px; width: auto; }
 
@@ -203,29 +203,29 @@
                 </marker>
             </defs>
 
-            <path d="M 260 190 L 280 190" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M 260 190 L 278 190" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
             
-            <path d="M 260 455 L 280 455" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M 260 455 L 278 455" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
 
-            <path d="M 540 190 C 590 190, 590 315, 630 315" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <path d="M 525 190 C 575 190, 575 315, 613 315" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
             
-            <path d="M 540 455 C 590 455, 590 340, 630 340" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <path d="M 525 455 C 575 455, 575 340, 613 340" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
 
-            <rect x="550" y="220" width="70" height="34" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
-            <text x="585" y="234" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
-                <tspan x="585" dy="0">User</tspan>
-                <tspan x="585" dy="15">Message</tspan>
+            <rect x="535" y="220" width="70" height="34" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
+            <text x="570" y="234" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
+                <tspan x="570" dy="0">User</tspan>
+                <tspan x="570" dy="15">Message</tspan>
             </text>
-            <rect x="550" y="380" width="70" height="34" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
-            <text x="585" y="394" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
-                <tspan x="585" dy="0">System</tspan>
-                <tspan x="585" dy="15">Prompt</tspan>
+            <rect x="535" y="380" width="70" height="34" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
+            <text x="570" y="394" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
+                <tspan x="570" dy="0">System</tspan>
+                <tspan x="570" dy="15">Prompt</tspan>
             </text>
 
-            <path d="M 790 325 L 840 325" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M 775 325 L 823 325" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
 
-            <path d="M 1100 300 C 1120 300, 1120 175, 1160 175" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
-            <path d="M 1100 365 C 1120 365, 1120 430, 1160 430" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <path d="M 1040 315 C 1060 315, 1085 215, 1093 215 L 1103 215" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <path d="M 1040 340 C 1060 340, 1085 420, 1093 420 L 1103 420" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
 
         </svg>
 
@@ -254,7 +254,7 @@
             <img src="overview_images/event_tree_blue_v2.png" alt="Event tree design" class="tree-image-fallback">
         </div>
 
-        <div class="node" id="node-md" style="--x: 280px; --y: 75px; --w: 260px;">
+        <div class="node" id="node-md" style="--x: 280px; --y: 75px; --w: 245px;">
             <div class="node-header">
                 <span>Event Encoder</span>
                 <img src="overview_images/markdown.png" alt="Markdown" class="header-icon">
@@ -274,7 +274,7 @@
             <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: right;">details.md</div>
         </div>
 
-        <div class="node" id="node-schema" style="--x: 280px; --y: 332px; --w: 260px;">
+        <div class="node" id="node-schema" style="--x: 280px; --y: 332px; --w: 245px;">
             <div class="node-header">
                 <span>JSON Schema</span>
                 <img src="overview_images/json.svg" alt="JSON" class="header-icon">
@@ -302,7 +302,7 @@
             <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: left;">Encode as enforceable schema</div>
         </div>
 
-        <div class="node" id="node-llm" style="--x: 630px; --y: 265px; --w: 160px; height: 130px;">
+        <div class="node" id="node-llm" style="--x: 615px; --y: 265px; --w: 160px; height: 130px;">
             <div class="llm-stack">
                 <div class="llm-title">Large Language Model</div>
                 <div class="llm-logos">
@@ -313,8 +313,11 @@
             </div>
         </div>
 
-        <div class="node" id="node-json" style="--x: 840px; --y: 180px; --w: 260px;">
-            <div class="node-header">Classified Event List</div>
+        <div class="node" id="node-json" style="--x: 825px; --y: 180px; --w: 215px;">
+            <div class="node-header">
+                <span>Event List</span>
+                <img src="overview_images/json.svg" alt="JSON" class="header-icon">
+            </div>
             <div class="code-block tiny" style="color: #064e3b;">
                 [<br>
                 &nbsp;{<br>
@@ -343,12 +346,12 @@
             </div>
         </div>
 
-        <div class="node result-node" id="node-result-tree" style="--x: 1160px; --y: 50px; --w: 230px;">
-            <div class="node-header">Uncertainty-quantified event tree</div>
+        <div class="node result-node" id="node-result-tree" style="--x: 1105px; --y: 70px; --w: 230px;">
+            <div class="node-header">Event tree</div>
             <img src="overview_images/full_tree.png" alt="Uncertainty quantified event tree" class="tree-image-fallback">
         </div>
 
-        <div class="node result-node" id="node-dashboard" style="--x: 1160px; --y: 320px; --w: 230px;">
+        <div class="node result-node" id="node-dashboard" style="--x: 1105px; --y: 320px; --w: 230px;">
             <div class="node-header">Details dashboard</div>
             <img src="overview_images/dashboard.png" alt="Details dashboard" class="tree-image-fallback">
         </div>
