@@ -7,12 +7,6 @@
       "model": "gemini-3-flash-preview"
     },
     {
-      "id": "deepseek-v3.2",
-      "name": "DeepSeek V3.2",
-      "events_path": "events-deepseek-v3.2.json",
-      "model": "deepseek/deepseek-v3.2"
-    },
-    {
       "id": "qwen3-14b",
       "name": "Qwen3-14B",
       "events_path": "events-qwen3-14b.json",

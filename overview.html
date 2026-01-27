@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM Hydrogen Safety Event Tree</title>
+    <title>Method overview</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -62,7 +62,7 @@
             background: #fff;
             border: 2px solid var(--stroke);
             border-radius: 8px;
-            padding: 12px;
+            padding: 11px;
             box-shadow: 0 3px 0 rgba(0,0,0,0.08);
             z-index: 2;
             display: flex;
@@ -72,16 +72,16 @@
 
         .node-header {
             font-weight: 700;
-            font-size: 16px;
+            font-size: 18px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             color: var(--ink);
             border-bottom: 1px solid rgba(0,0,0,0.1);
             padding-bottom: 6px;
             margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 2px;
         }
 
         .code-block {
@@ -129,7 +129,7 @@
             text-align: center;
         }
         .llm-stack { display: flex; flex-direction: column; gap: 6px; align-items: center; }
-        .llm-title { font-size: 19px; font-weight: 900; letter-spacing: 1px; }
+        .llm-title { font-size: 18px; font-weight: 900; letter-spacing: 1px; }
         .llm-logos { display: flex; gap: 12px; align-items: center; justify-content: center; }
         .llm-logo { height: 26px; width: auto; }
 
@@ -222,14 +222,20 @@
                 <tspan x="570" dy="15">Prompt</tspan>
             </text>
 
-            <path d="M 775 325 L 823 325" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
+            <path d="M 775 325 L 893 325" stroke="#334155" stroke-width="2" marker-end="url(#arrow)" />
 
-            <path d="M 1040 315 C 1060 315, 1085 215, 1093 215 L 1103 215" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
-            <path d="M 1040 340 C 1060 340, 1085 420, 1093 420 L 1103 420" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <rect x="788" y="307" width="86" height="36" rx="4" fill="#f8fafc" stroke="#cbd5f5" />
+            <text x="831" y="322" text-anchor="middle" font-family="Manrope" font-size="12" font-weight="700" fill="#64748b">
+                <tspan x="831" dy="0">Concatenate</tspan>
+                <tspan x="831" dy="13">output</tspan>
+            </text>
+
+            <path d="M 1110 315 C 1130 315, 1155 215, 1163 215 L 1173 215" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
+            <path d="M 1110 340 C 1130 340, 1155 420, 1163 420 L 1173 420" stroke="#334155" stroke-width="2" fill="none" marker-end="url(#arrow)" />
 
         </svg>
 
-        <div class="node" id="node-hiad" style="--x: 30px; --y: 50px; --w: 230px;">
+        <div class="node" id="node-hiad" style="--x: 30px; --y: 75px; --w: 230px;">
             <div class="node-header">
                 <span>HIAD 2.1</span>
                 <img src="overview_images/hiad.svg" alt="HIAD" class="header-icon db">
@@ -241,12 +247,11 @@
                 Substance: GH2...
             </div>
             <div class="code-block" style="background: rgba(255,255,255,0.4);">ID: 103...</div>
-            <div class="code-block" style="background: rgba(255,255,255,0.2);">ID: 104...</div>
             <div class="ellipsis">...</div>
             <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: right;">hiad.xlsx</div>
         </div>
 
-        <div class="node" id="node-tree" style="--x: 30px; --y: 330px; --w: 230px;">
+        <div class="node" id="node-tree" style="--x: 30px; --y: 315px; --w: 230px;">
             <div class="node-header">
                 <span>Event tree design</span>
                 <img src="overview_images/tree.svg" alt="Tree" class="header-icon tree">
@@ -274,7 +279,7 @@
             <div style="font-size: 11px; color: #64748b; font-weight: 600; text-align: right;">details.md</div>
         </div>
 
-        <div class="node" id="node-schema" style="--x: 280px; --y: 332px; --w: 245px;">
+        <div class="node" id="node-schema" style="--x: 280px; --y: 317px; --w: 245px;">
             <div class="node-header">
                 <span>JSON Schema</span>
                 <img src="overview_images/json.svg" alt="JSON" class="header-icon">
@@ -313,7 +318,7 @@
             </div>
         </div>
 
-        <div class="node" id="node-json" style="--x: 825px; --y: 180px; --w: 215px;">
+        <div class="node" id="node-json" style="--x: 895px; --y: 180px; --w: 215px;">
             <div class="node-header">
                 <span>Event List</span>
                 <img src="overview_images/json.svg" alt="JSON" class="header-icon">
@@ -346,14 +351,14 @@
             </div>
         </div>
 
-        <div class="node result-node" id="node-result-tree" style="--x: 1105px; --y: 70px; --w: 230px;">
+        <div class="node result-node" id="node-result-tree" style="--x: 1175px; --y: 90px; --w: 230px;">
             <div class="node-header">Event tree</div>
             <img src="overview_images/full_tree.png" alt="Uncertainty quantified event tree" class="tree-image-fallback">
         </div>
 
-        <div class="node result-node" id="node-dashboard" style="--x: 1105px; --y: 320px; --w: 230px;">
+        <div class="node result-node" id="node-dashboard" style="--x: 1175px; --y: 340px; --w: 230px;">
             <div class="node-header">Details dashboard</div>
-            <img src="overview_images/dashboard.png" alt="Details dashboard" class="tree-image-fallback">
+            <img src="overview_images/dashboard.png" alt="Details dashboard" class="tree-image-fallback" style="height: 150px; width: 100%; object-fit: cover; object-position: top;">
         </div>
 
     </div>
