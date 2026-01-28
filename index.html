@@ -178,7 +178,7 @@
       font-family: var(--title-font);
       padding-left: 6px;
       padding-bottom: 4px;
-      padding-right: 10px;
+      padding-right: 12px;
       font-size: 18px;
     }
     .card {
@@ -585,6 +585,10 @@
       color: var(--muted);
       font-size: 10px;
     }
+    .hpd-sub {
+      font-size: 0.75em;
+      vertical-align: sub;
+    }
     .tree-node.highlight {
       border-color: var(--accent);
       box-shadow: 0 0 0 1px rgba(15, 143, 155, 0.18), 0 4px 10px rgba(0,0,0,0.18);
@@ -595,6 +599,14 @@
     }
     .tree-node.with-distribution {
       width: 135px;
+    }
+    @media (max-width: 820px) {
+      .hpd-sub {
+        display: none;
+      }
+      .beta-tooltip .hpd-sub {
+        display: inline;
+      }
     }
     @media (prefers-reduced-motion: reduce) {
       .tree-node {
@@ -1142,22 +1154,6 @@
     .model-data-select {
       width: 100%;
     }
-    .about-model-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      margin: 10px 0 14px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: var(--panel);
-    }
-    .about-model-label {
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: 0.02em;
-    }
     .about-model-select {
       background: var(--card);
       color: var(--text);
@@ -1166,11 +1162,6 @@
       padding: 6px 10px;
       font-family: "IBM Plex Mono", monospace;
       font-size: 12px;
-    }
-    .about-model-meta {
-      font-size: 12px;
-      color: var(--muted);
-      font-family: "IBM Plex Mono", monospace;
     }
     .about-body a {
       color: var(--accent);
@@ -1361,13 +1352,6 @@
         <p>
           This dashboard was produced by Simon Halvdansson as part of the <a href="https://hydrogeni.no/" target="_blank">HYDROGENi</a> project at <a href="https://www.sintef.no/en/sintef-energy/" target="_blank">SINTEF Energy Research</a>. For additional details on the project which this dashboard is a part of, see the paper (link to be added) and <a href="https://github.com/SimonHalvdansson/H2-Event-Tree" target="_blank">GitHub repository</a>.
         </p>
-        <div class="about-model-row">
-          <span class="about-model-label">Model answers data</span>
-          <select id="modelSelect" class="about-model-select js-model-select" aria-label="Select model dataset">
-            <option value="">Loading...</option>
-          </select>
-          <span class="about-model-meta js-model-meta" id="modelMeta">Loading model manifest...</span>
-        </div>
       </div>
     </div>
   </div>
@@ -1874,6 +1858,11 @@
       return `${toText(lower)}-${toText(upper)}%`;
     }
 
+    function formatHpdLabel(mass) {
+      const level = Number.isFinite(mass) ? Math.round(mass * 100) : 95;
+      return `HPD<sub class="hpd-sub">${level}</sub>`;
+    }
+
     function formatBetaParam(value, useWeights) {
       if (!Number.isFinite(value)) return "—";
       if (useWeights) return value.toFixed(1);
@@ -2004,7 +1993,7 @@
       const innerH = cssH - padding.top - padding.bottom;
       const baseY = padding.top + innerH;
       const eps = 1e-4;
-      const samples = 320;
+      const samples = Math.min(1400, Math.max(480, Math.round(innerW * 6)));
       const xs = [];
       const ys = [];
       let maxY = 0;
@@ -2139,8 +2128,7 @@
       if (betaTooltipRange) {
         if (hdi && Number.isFinite(hdi.lower) && Number.isFinite(hdi.upper)) {
           const rangeText = formatPercentRange(hdi.lower, hdi.upper);
-          const isTightWidth = window.matchMedia("(max-width: 650px)").matches;
-          betaTooltipRange.textContent = isTightWidth ? rangeText : `HPD: ${rangeText}`;
+          betaTooltipRange.innerHTML = `${formatHpdLabel(credibleLevel)}: ${rangeText}`;
         } else {
           betaTooltipRange.textContent = "Credible interval unavailable";
         }
@@ -2708,7 +2696,7 @@
         if (hasProbability && showCredible) {
           if (hdi && Number.isFinite(hdi.lower) && Number.isFinite(hdi.upper)) {
             const rangeText = formatPercentRange(hdi.lower, hdi.upper);
-            probLine = isTightWidth ? rangeText : `HPD: ${rangeText}`;
+            probLine = isTightWidth ? rangeText : `${formatHpdLabel(credibleLevel)}: ${rangeText}`;
           }
         }
         prob.innerHTML = probLine;
@@ -2878,13 +2866,13 @@
             <h2>Event Description</h2>
             <pre>${description}</pre>
           </div>
-          <div class="card-section">
-            <h2>Model data</h2>
-            <div class="model-data-row">
-              <select class="about-model-select model-data-select js-model-select" aria-label="Select model dataset">
-                <option value="">Loading...</option>
-              </select>
-            </div>
+        </div>
+        <div class="card">
+          <h2>Model data</h2>
+          <div class="model-data-row">
+            <select class="about-model-select model-data-select js-model-select" aria-label="Select model dataset">
+              <option value="">Loading...</option>
+            </select>
           </div>
         </div>
         <div class="card">
@@ -3065,7 +3053,7 @@
       });
     }
 
-    async function loadEventsFromPath(path) {
+    async function loadEventsFromPath(path, { preferredEventId = null, preferredIndex = null } = {}) {
       try {
         const response = await fetch(path, { cache: "no-cache" });
         if (!response.ok) throw new Error(`Failed to load events: ${response.statusText}`);
@@ -3075,6 +3063,18 @@
           setEmptyState(`No events found in ${path}.`);
           return;
         }
+        let nextSelection = null;
+        if (preferredEventId !== null && preferredEventId !== undefined) {
+          const targetId = String(preferredEventId);
+          const matchIndex = eventsData.findIndex((ev) => String(ev?.event_id) === targetId);
+          if (matchIndex >= 0) nextSelection = matchIndex;
+        }
+        if (nextSelection === null && Number.isInteger(preferredIndex)) {
+          if (preferredIndex >= 0 && preferredIndex < eventsData.length) {
+            nextSelection = preferredIndex;
+          }
+        }
+        selectedIndex = nextSelection;
         refreshList({ ensureSelection: true });
         updateTree();
       } catch (err) {
@@ -3096,8 +3096,9 @@
       updateModelSelect();
       updateModelMeta();
       activeTreeFilter = null;
-      selectedIndex = null;
-      await loadEventsFromPath(model.events_path);
+      const preferredEventId = eventsData[selectedIndex]?.event_id ?? null;
+      const preferredIndex = selectedIndex;
+      await loadEventsFromPath(model.events_path, { preferredEventId, preferredIndex });
     }
 
     const listOverlayQuery = window.matchMedia("(max-width: 550px)");

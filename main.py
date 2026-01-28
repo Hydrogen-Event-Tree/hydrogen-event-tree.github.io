@@ -24,20 +24,20 @@ OPENROUTER_API_KEY = ""
 GEMINI_API_KEY = ""
 
 LLMS = [
+    #{
+    #    "id": "gemini-3-pro",
+    #    "name": "Gemini 3 Pro",
+    #    "model": "gemini-3-pro-preview",
+    #    "provider": "google-ai-studio",
+    #},
     {
         "id": "gemini-3-flash",
         "name": "Gemini 3 Flash",
         "model": "gemini-3-flash-preview",
         "provider": "google-ai-studio",
     },
-    #{
-    #    "id": "deepseek-v3.2",
-    #    "name": "DeepSeek V3.2",
-    #    "model": "deepseek/deepseek-v3.2",
-    #    "provider": "openrouter",
-    #},
-    {"id": "qwen3-14b", "name": "Qwen3-14B", "model": "qwen3:14b", "provider": "ollama"},
-    {"id": "gpt-oss-20b", "name": "gpt-oss-20b", "model": "gpt-oss:20b", "provider": "ollama"},
+    #{"id": "qwen3-14b", "name": "Qwen3-14B", "model": "qwen3:14b", "provider": "ollama"},
+    #{"id": "gpt-oss-20b", "name": "gpt-oss-20b", "model": "gpt-oss:20b", "provider": "ollama"},
 ]
 
 RESPONSE_SCHEMA = {
@@ -259,7 +259,7 @@ def _ask_google_ai_studio(prompt: str, system_prompt: str, model: str):
     client = genai.Client(api_key=GEMINI_API_KEY)
     config = types.GenerateContentConfig(
         systemInstruction=system_prompt or None,
-        thinkingConfig=types.ThinkingConfig(thinkingLevel=types.ThinkingLevel.MEDIUM),
+        thinkingConfig=types.ThinkingConfig(thinkingLevel=types.ThinkingLevel.HIGH),
         responseMimeType="application/json",
         responseSchema=_build_genai_response_schema(),
     )

@@ -1,4 +1,3 @@
-import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
@@ -12,11 +11,6 @@ def _read_text(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def _load_events(path: str) -> list[dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as handle:
-        return json.load(handle)
-
-
 def run(
     models: str,
     events_path: str = "events.json",
@@ -25,7 +19,6 @@ def run(
     port: int = 4000,
     max_tries: int = 5,
 ) -> None:
-    events = _load_events(events_path)
     index_html = _read_text(index_path)
     base_dir = Path(index_path).resolve().parent
 
@@ -88,10 +81,7 @@ def run(
     if server is None:
         raise last_error if last_error else RuntimeError("Unable to start server.")
 
-    print(
-        f"Dashboard available at http://{host}:{bound_port} "
-        f"(serving {events_path} with {len(events)} events via {index_path})"
-    )
+    print(f"dashboard available at localhost:{bound_port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
