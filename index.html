@@ -1860,7 +1860,7 @@
 
     function formatHpdLabel(mass) {
       const level = Number.isFinite(mass) ? Math.round(mass * 100) : 95;
-      return `HPD<sub class="hpd-sub">${level}</sub>`;
+      return `HPD<sub class="hpd-sub">${level}%</sub>`;
     }
 
     function formatBetaParam(value, useWeights) {
