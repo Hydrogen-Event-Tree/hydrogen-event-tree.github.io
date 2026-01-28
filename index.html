@@ -3076,6 +3076,9 @@
         }
         selectedIndex = nextSelection;
         refreshList({ ensureSelection: true });
+        if (selectedIndex !== null && eventsData[selectedIndex]) {
+          selectEvent(selectedIndex);
+        }
         updateTree();
       } catch (err) {
         console.error(err);

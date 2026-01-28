@@ -17,8 +17,6 @@ FILE_PATH = "hiad.xlsx"
 COUNT = 1000
 DEFAULT_MAX_WORKERS = 8
 
-#TODO: Fix intersection of the red status light with text in compressed version, give that thing proper margins
-
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 OPENROUTER_API_KEY = ""
 GEMINI_API_KEY = ""
