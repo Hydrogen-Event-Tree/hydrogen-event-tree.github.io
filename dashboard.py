@@ -12,7 +12,6 @@ def _read_text(path: str) -> str:
 
 
 def run(
-    models: str,
     events_path: str = "events.json",
     index_path: str = "index.html",
     host: str = "127.0.0.1",
