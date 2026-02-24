@@ -3,7 +3,7 @@ from scipy.stats import beta
 from scipy.optimize import minimize_scalar
 import numpy as np
 
-def create_event_tree(events, show_exclusion = False, filename = "event_tree.png"):
+def create_event_tree(events, show_exclusion = False, filename = "src/event_tree/event_tree.png"):
     """
     Build a left-to-right event tree using the boolean answers.
 

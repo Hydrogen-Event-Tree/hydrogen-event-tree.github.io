@@ -1,6 +1,7 @@
 import json
 import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
 import pandas as pd
 from pandas import Series
@@ -13,7 +14,10 @@ from google.genai import types
 
 from dashboard import run as run_dashboard
 
-FILE_PATH = "hiad.xlsx"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+EVENTS_DIR = ROOT_DIR / "src" / "events"
+WEB_EVENTS_DIR = "src/events"
+FILE_PATH = ROOT_DIR / "hiad.xlsx"
 COUNT = 1000
 DEFAULT_MAX_WORKERS = 8
 
@@ -459,22 +463,22 @@ Exclude no LOC rubric: Mark true when no hydrogen was released; set false if any
     return results
 
 
-def save_events(events, path = "events.json"):
-    with open(path, "w", encoding="utf-8") as handle:
+def save_events(events, path=EVENTS_DIR / "events.json"):
+    with open(Path(path), "w", encoding="utf-8") as handle:
         json.dump(events, handle, ensure_ascii=True, indent=2)
 
 
-def load_events(path = "events.json"):
-    with open(path, "r", encoding="utf-8") as handle:
+def load_events(path=EVENTS_DIR / "events.json"):
+    with open(Path(path), "r", encoding="utf-8") as handle:
         events = json.load(handle)
     return events
 
 
-def save_events_manifest(models, default_model_id=None, path="events-manifest.json"):
+def save_events_manifest(models, default_model_id=None, path=EVENTS_DIR / "events-manifest.json"):
     payload = {"models": models}
     if default_model_id is not None:
         payload["default_model_id"] = default_model_id
-    with open(path, "w", encoding="utf-8") as handle:
+    with open(Path(path), "w", encoding="utf-8") as handle:
         json.dump(payload, handle, ensure_ascii=True, indent=2)
 
 
@@ -482,12 +486,14 @@ if __name__ == "__main__":
     gen = 0
 
     if gen:
+        EVENTS_DIR.mkdir(parents=True, exist_ok=True)
         manifest = []
         for model_config in LLMS:
-            events_path = f"events-{model_config['id']}.json"
-            results = process_events(model_config=model_config, save_path=events_path)
-            manifest.append({"id": model_config.get("id"), "name": model_config.get("name"), "events_path": events_path, "model": model_config.get("model")})
+            events_file = EVENTS_DIR / f"events-{model_config['id']}.json"
+            events_web_path = f"{WEB_EVENTS_DIR}/events-{model_config['id']}.json"
+            results = process_events(model_config=model_config, save_path=events_file)
+            manifest.append({"id": model_config.get("id"), "name": model_config.get("name"), "events_path": events_web_path, "model": model_config.get("model")})
 
         save_events_manifest(manifest, default_model_id=LLMS[0]["id"] if LLMS else None)
 
-    run_dashboard(models = LLMS, port=4000)
+    run_dashboard(models=LLMS, events_path=EVENTS_DIR / "events.json", index_path=ROOT_DIR / "index.html", port=4000)

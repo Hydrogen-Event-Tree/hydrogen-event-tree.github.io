@@ -3,19 +3,19 @@
     {
       "id": "gemini-3-flash",
       "name": "Gemini 3 Flash",
-      "events_path": "events-gemini-3-flash.json",
+      "events_path": "src/events/events-gemini-3-flash.json",
       "model": "gemini-3-flash-preview"
     },
     {
       "id": "qwen3-14b",
       "name": "Qwen3-14B",
-      "events_path": "events-qwen3-14b.json",
+      "events_path": "src/events/events-qwen3-14b.json",
       "model": "qwen3:14b"
     },
     {
       "id": "gpt-oss-20b",
       "name": "gpt-oss-20b",
-      "events_path": "events-gpt-oss-20b.json",
+      "events_path": "src/events/events-gpt-oss-20b.json",
       "model": "gpt-oss:20b"
     }
   ],

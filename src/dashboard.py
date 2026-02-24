@@ -2,25 +2,28 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
 
 class ReusableHTTPServer(HTTPServer):
     allow_reuse_address = True
 
 
-def _read_text(path: str) -> str:
+def _read_text(path: str | Path) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
 def run(
-    models: str,
-    events_path: str = "events.json",
-    index_path: str = "index.html",
+    events_path: str | Path = ROOT_DIR / "src" / "events" / "events.json",
+    index_path: str | Path = ROOT_DIR / "index.html",
     host: str = "127.0.0.1",
     port: int = 4000,
     max_tries: int = 5,
 ) -> None:
+    index_path = Path(index_path)
+    events_path = Path(events_path)
     index_html = _read_text(index_path)
-    base_dir = Path(index_path).resolve().parent
+    base_dir = index_path.resolve().parent
 
     class Handler(BaseHTTPRequestHandler):
         def _respond(self, code: int, content_type: str, body: str) -> None:
@@ -47,7 +50,7 @@ def run(
                 return
 
             if self.path == "/events.json":
-                self._respond_json_file(Path(events_path))
+                self._respond_json_file(events_path)
                 return
 
             if self.path.endswith(".json"):

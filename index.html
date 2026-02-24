@@ -3047,7 +3047,7 @@
       }
       const name = model.name || model.id || "Unknown model";
       const engine = model.model ? ` (${model.model})` : "";
-      const eventsPath = model.events_path || "events.json";
+      const eventsPath = model.events_path || "src/events/events.json";
       metas.forEach((meta) => {
         meta.textContent = `Active dataset: ${name}${engine}. Source: ${eventsPath}`;
       });
@@ -3157,7 +3157,7 @@
     async function loadEvents() {
       setEmptyState("Loading events...");
       try {
-        const response = await fetch("events-manifest.json", { cache: "no-cache" });
+        const response = await fetch("src/events/events-manifest.json", { cache: "no-cache" });
         if (!response.ok) throw new Error(`Failed to load manifest: ${response.statusText}`);
         manifestData = await response.json();
         availableModels = normalizeModels(manifestData.models);
@@ -3167,7 +3167,7 @@
         await applyModelSelection(preferredId, { persist: false });
       } catch (err) {
         console.error(err);
-        setEmptyState("Unable to load events-manifest.json. Check the server output for details.");
+        setEmptyState("Unable to load src/events/events-manifest.json. Check the server output for details.");
         updateModelSelect();
         updateModelMeta();
       }
