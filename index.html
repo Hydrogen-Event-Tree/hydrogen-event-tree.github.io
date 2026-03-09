@@ -1389,34 +1389,40 @@
     let activeTreeFilter = null;
 
     const TREE_OUTCOME_LABELS = [
-      "Deflagration / Detonation",
       "Jet fire",
-      "VCE / Flash fire",
+      "VCE",
+      "Flash fire",
       "Plume",
-      "Deflagration / Detonation",
       "Fireball",
-      "VCE / Flash fire",
+      "VCE",
+      "Flash fire",
       "Puff",
     ];
 
     const TREE_LEAVES = [
       {
-        id: "leaf_cr_y_imm_y_conf_y",
-        parent: "conf_yes_cr_yes_imm_yes",
-        conditions: { continuous_release: true, immediate_ignition: true, confined_space: true },
+        id: "leaf_cr_y_imm_y",
+        parent: "imm_yes_cr_yes",
+        conditions: { continuous_release: true, immediate_ignition: true },
       },
       {
-        id: "leaf_cr_y_imm_y_conf_n",
-        parent: "conf_no_cr_yes_imm_yes",
-        conditions: { continuous_release: true, immediate_ignition: true, confined_space: false },
-      },
-      {
-        id: "leaf_cr_y_imm_n_del_y",
-        parent: "del_yes_cr_yes",
+        id: "leaf_cr_y_imm_n_del_y_conf_y",
+        parent: "conf_yes_cr_yes_del_yes",
         conditions: {
           continuous_release: true,
           immediate_ignition: false,
           delayed_ignition: true,
+          confined_space: true,
+        },
+      },
+      {
+        id: "leaf_cr_y_imm_n_del_y_conf_n",
+        parent: "conf_no_cr_yes_del_yes",
+        conditions: {
+          continuous_release: true,
+          immediate_ignition: false,
+          delayed_ignition: true,
+          confined_space: false,
         },
       },
       {
@@ -1429,22 +1435,28 @@
         },
       },
       {
-        id: "leaf_cr_n_imm_y_conf_y",
-        parent: "conf_yes_cr_no_imm_yes",
-        conditions: { continuous_release: false, immediate_ignition: true, confined_space: true },
+        id: "leaf_cr_n_imm_y",
+        parent: "imm_yes_cr_no",
+        conditions: { continuous_release: false, immediate_ignition: true },
       },
       {
-        id: "leaf_cr_n_imm_y_conf_n",
-        parent: "conf_no_cr_no_imm_yes",
-        conditions: { continuous_release: false, immediate_ignition: true, confined_space: false },
-      },
-      {
-        id: "leaf_cr_n_imm_n_del_y",
-        parent: "del_yes_cr_no",
+        id: "leaf_cr_n_imm_n_del_y_conf_y",
+        parent: "conf_yes_cr_no_del_yes",
         conditions: {
           continuous_release: false,
           immediate_ignition: false,
           delayed_ignition: true,
+          confined_space: true,
+        },
+      },
+      {
+        id: "leaf_cr_n_imm_n_del_y_conf_n",
+        parent: "conf_no_cr_no_del_yes",
+        conditions: {
+          continuous_release: false,
+          immediate_ignition: false,
+          delayed_ignition: true,
+          confined_space: false,
         },
       },
       {
@@ -1547,45 +1559,49 @@
         column: "delayed",
       },
       {
-        id: "conf_yes_cr_yes_imm_yes",
+        id: "conf_yes_cr_yes_del_yes",
         label: "Yes",
-        parent: "imm_yes_cr_yes",
+        parent: "del_yes_cr_yes",
         conditions: {
           continuous_release: true,
-          immediate_ignition: true,
+          immediate_ignition: false,
+          delayed_ignition: true,
           confined_space: true,
         },
         column: "confined",
       },
       {
-        id: "conf_no_cr_yes_imm_yes",
+        id: "conf_no_cr_yes_del_yes",
         label: "No",
-        parent: "imm_yes_cr_yes",
+        parent: "del_yes_cr_yes",
         conditions: {
           continuous_release: true,
-          immediate_ignition: true,
+          immediate_ignition: false,
+          delayed_ignition: true,
           confined_space: false,
         },
         column: "confined",
       },
       {
-        id: "conf_yes_cr_no_imm_yes",
+        id: "conf_yes_cr_no_del_yes",
         label: "Yes",
-        parent: "imm_yes_cr_no",
+        parent: "del_yes_cr_no",
         conditions: {
           continuous_release: false,
-          immediate_ignition: true,
+          immediate_ignition: false,
+          delayed_ignition: true,
           confined_space: true,
         },
         column: "confined",
       },
       {
-        id: "conf_no_cr_no_imm_yes",
+        id: "conf_no_cr_no_del_yes",
         label: "No",
-        parent: "imm_yes_cr_no",
+        parent: "del_yes_cr_no",
         conditions: {
           continuous_release: false,
-          immediate_ignition: true,
+          immediate_ignition: false,
+          delayed_ignition: true,
           confined_space: false,
         },
         column: "confined",
@@ -2199,21 +2215,13 @@
         xPositions[col.key] = baseX + idx * (columnSpacing + stepSpacing);
       });
 
-      const sortKeys = ["continuous_release", "immediate_ignition", "delayed_ignition", "confined_space"];
-      const orderedLeaves = [...leafDefs].sort((a, b) => {
-        for (const key of sortKeys) {
-          const av = a.conditions[key] === true ? 1 : 0;
-          const bv = b.conditions[key] === true ? 1 : 0;
-          if (av !== bv) return av - bv; // sort so Yes appears above No in the layout
-        }
-        return 0;
-      });
+      const orderedLeaves = [...leafDefs];
 
       const startY = ((orderedLeaves.length - 1) * spacingY) / 2;
       const leaves = orderedLeaves.map((leaf, idx) => ({
         ...leaf,
         x: xPositions.outcome,
-        y: startY - idx * spacingY,
+        y: idx * spacingY - startY,
         type: "outcome",
       }));
 

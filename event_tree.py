@@ -12,11 +12,10 @@ def create_event_tree(events, show_exclusion = False, filename = "event_tree.png
     - Optional inclusion column before branching if show_exclusion=True.
     - Split on continuous release (Yes/No).
     - Split each branch on immediate ignition.
-      - If immediate ignition is Yes, go straight to confined space.
+      - If immediate ignition is Yes, go directly to an outcome.
       - If immediate ignition is No, split on delayed ignition.
-    - If delayed ignition is Yes, go directly to an outcome (no confined split).
+    - If delayed ignition is Yes, split on confined space.
     - If delayed ignition is No, go directly to an outcome.
-    - Outcomes are placeholders (XXX) the user can fill later.
     """
     if not events:
         raise ValueError("No events provided for plotting.")
@@ -129,23 +128,29 @@ def create_event_tree(events, show_exclusion = False, filename = "event_tree.png
     # Ordered leaves establish vertical spacing.
     main_leaf_specs = [
         {
-            "id": "leaf_cr_y_imm_y_conf_y",
-            "conditions": {"continuous_release": True, "immediate_ignition": True, "confined_space": True},
-            "parent": "conf_yes_cr_yes_imm_yes",
+            "id": "leaf_cr_y_imm_y",
+            "conditions": {"continuous_release": True, "immediate_ignition": True},
+            "parent": "imm_yes_cr_yes",
         },
         {
-            "id": "leaf_cr_y_imm_y_conf_n",
-            "conditions": {"continuous_release": True, "immediate_ignition": True, "confined_space": False},
-            "parent": "conf_no_cr_yes_imm_yes",
-        },
-        {
-            "id": "leaf_cr_y_imm_n_del_y",
+            "id": "leaf_cr_y_imm_n_del_y_conf_y",
             "conditions": {
                 "continuous_release": True,
                 "immediate_ignition": False,
                 "delayed_ignition": True,
+                "confined_space": True,
             },
-            "parent": "del_yes_cr_yes",
+            "parent": "conf_yes_cr_yes_del_yes",
+        },
+        {
+            "id": "leaf_cr_y_imm_n_del_y_conf_n",
+            "conditions": {
+                "continuous_release": True,
+                "immediate_ignition": False,
+                "delayed_ignition": True,
+                "confined_space": False,
+            },
+            "parent": "conf_no_cr_yes_del_yes",
         },
         {
             "id": "leaf_cr_y_imm_n_del_n",
@@ -157,23 +162,29 @@ def create_event_tree(events, show_exclusion = False, filename = "event_tree.png
             "parent": "del_no_cr_yes",
         },
         {
-            "id": "leaf_cr_n_imm_y_conf_y",
-            "conditions": {"continuous_release": False, "immediate_ignition": True, "confined_space": True},
-            "parent": "conf_yes_cr_no_imm_yes",
+            "id": "leaf_cr_n_imm_y",
+            "conditions": {"continuous_release": False, "immediate_ignition": True},
+            "parent": "imm_yes_cr_no",
         },
         {
-            "id": "leaf_cr_n_imm_y_conf_n",
-            "conditions": {"continuous_release": False, "immediate_ignition": True, "confined_space": False},
-            "parent": "conf_no_cr_no_imm_yes",
-        },
-        {
-            "id": "leaf_cr_n_imm_n_del_y",
+            "id": "leaf_cr_n_imm_n_del_y_conf_y",
             "conditions": {
                 "continuous_release": False,
                 "immediate_ignition": False,
                 "delayed_ignition": True,
+                "confined_space": True,
             },
-            "parent": "del_yes_cr_no",
+            "parent": "conf_yes_cr_no_del_yes",
+        },
+        {
+            "id": "leaf_cr_n_imm_n_del_y_conf_n",
+            "conditions": {
+                "continuous_release": False,
+                "immediate_ignition": False,
+                "delayed_ignition": True,
+                "confined_space": False,
+            },
+            "parent": "conf_no_cr_no_del_yes",
         },
         {
             "id": "leaf_cr_n_imm_n_del_n",
@@ -238,13 +249,13 @@ def create_event_tree(events, show_exclusion = False, filename = "event_tree.png
             leaf["kind"] = "outcome"
 
     outcome_labels = [
-        "Explosion",
         "Jet fire",
-        "VCE / Flash fire",
+        "VCE",
+        "Flash fire",
         "Plume",
-        "Explosion",
         "Fireball",
-        "VCE / Flash fire",
+        "VCE",
+        "Flash fire",
         "Puff",
     ]
     outcome_idx = 0
@@ -346,31 +357,51 @@ def create_event_tree(events, show_exclusion = False, filename = "event_tree.png
                 "x": horizontal_positions["delayed"],
             },
             {
-                "id": "conf_yes_cr_yes_imm_yes",
+                "id": "conf_yes_cr_yes_del_yes",
                 "label": "Yes",
-                "conditions": {"continuous_release": True, "immediate_ignition": True, "confined_space": True},
-                "parent": "imm_yes_cr_yes",
+                "conditions": {
+                    "continuous_release": True,
+                    "immediate_ignition": False,
+                    "delayed_ignition": True,
+                    "confined_space": True,
+                },
+                "parent": "del_yes_cr_yes",
                 "x": horizontal_positions["confined"],
             },
             {
-                "id": "conf_no_cr_yes_imm_yes",
+                "id": "conf_no_cr_yes_del_yes",
                 "label": "No",
-                "conditions": {"continuous_release": True, "immediate_ignition": True, "confined_space": False},
-                "parent": "imm_yes_cr_yes",
+                "conditions": {
+                    "continuous_release": True,
+                    "immediate_ignition": False,
+                    "delayed_ignition": True,
+                    "confined_space": False,
+                },
+                "parent": "del_yes_cr_yes",
                 "x": horizontal_positions["confined"],
             },
             {
-                "id": "conf_yes_cr_no_imm_yes",
+                "id": "conf_yes_cr_no_del_yes",
                 "label": "Yes",
-                "conditions": {"continuous_release": False, "immediate_ignition": True, "confined_space": True},
-                "parent": "imm_yes_cr_no",
+                "conditions": {
+                    "continuous_release": False,
+                    "immediate_ignition": False,
+                    "delayed_ignition": True,
+                    "confined_space": True,
+                },
+                "parent": "del_yes_cr_no",
                 "x": horizontal_positions["confined"],
             },
             {
-                "id": "conf_no_cr_no_imm_yes",
+                "id": "conf_no_cr_no_del_yes",
                 "label": "No",
-                "conditions": {"continuous_release": False, "immediate_ignition": True, "confined_space": False},
-                "parent": "imm_yes_cr_no",
+                "conditions": {
+                    "continuous_release": False,
+                    "immediate_ignition": False,
+                    "delayed_ignition": True,
+                    "confined_space": False,
+                },
+                "parent": "del_yes_cr_no",
                 "x": horizontal_positions["confined"],
             },
         ]
