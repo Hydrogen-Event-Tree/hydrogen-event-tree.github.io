@@ -93,6 +93,26 @@
       border-color: var(--accent);
       color: var(--accent);
     }
+    .text-link-button {
+      border: none;
+      background: transparent;
+      padding: 0;
+      color: var(--accent);
+      cursor: pointer;
+      font-family: var(--title-font);
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      align-self: flex-start;
+    }
+    .text-link-button:hover {
+      color: var(--text);
+    }
+    .text-link-button:disabled {
+      color: var(--muted);
+      cursor: default;
+    }
     .header-tabs {
       display: inline-flex;
       gap: 8px;
@@ -1039,7 +1059,8 @@
       line-height: 1.35;
       font-family: var(--title-font);
     }
-    .about-modal {
+    .about-modal,
+    .compare-modal {
       position: fixed;
       inset: 0;
       display: flex;
@@ -1051,15 +1072,18 @@
       visibility: hidden;
       transition: visibility 0s linear 0.2s;
     }
-    body[data-about-open="true"] .about-modal {
+    body[data-about-open="true"] .about-modal,
+    body[data-compare-open="true"] .compare-modal {
       pointer-events: auto;
       visibility: visible;
       transition-delay: 0s;
     }
-    body[data-about-open="true"] {
+    body[data-about-open="true"],
+    body[data-compare-open="true"] {
       overflow: hidden;
     }
-    .about-modal-overlay {
+    .about-modal-overlay,
+    .compare-modal-overlay {
       position: absolute;
       inset: 0;
       background: rgba(15, 23, 42, 0);
@@ -1067,12 +1091,14 @@
       opacity: 0;
       transition: background 0.2s ease, backdrop-filter 0.2s ease, opacity 0.2s ease;
     }
-    body[data-about-open="true"] .about-modal-overlay {
+    body[data-about-open="true"] .about-modal-overlay,
+    body[data-compare-open="true"] .compare-modal-overlay {
       background: rgba(15, 23, 42, 0.38);
       backdrop-filter: blur(4px);
       opacity: 1;
     }
-    .about-modal-card {
+    .about-modal-card,
+    .compare-modal-card {
       position: relative;
       width: min(640px, 92vw);
       background: var(--card);
@@ -1085,18 +1111,24 @@
       transform: translateY(10px) scale(0.98);
       transition: opacity 0.2s ease, transform 0.2s ease;
     }
-    body[data-about-open="true"] .about-modal-card {
+    .compare-modal-card {
+      width: min(760px, 94vw);
+    }
+    body[data-about-open="true"] .about-modal-card,
+    body[data-compare-open="true"] .compare-modal-card {
       opacity: 1;
       transform: translateY(0) scale(1);
     }
-    .about-modal-header {
+    .about-modal-header,
+    .compare-modal-header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 16px;
       margin-bottom: 10px;
     }
-    .about-title {
+    .about-title,
+    .compare-title {
       margin: 0;
       font-size: 20px;
       display: flex;
@@ -1106,16 +1138,19 @@
       letter-spacing: 0.02em;
       color: var(--accent);
     }
-    .about-title .title-accent {
+    .about-title .title-accent,
+    .compare-title .title-accent {
       color: var(--accent);
       font-weight: 600;
     }
-    .about-title .brand sub {
+    .about-title .brand sub,
+    .compare-title .brand sub {
       font-size: 0.6em;
       line-height: 0;
       vertical-align: sub;
     }
-    .about-close {
+    .about-close,
+    .compare-close {
       border: 1px solid var(--border);
       background: var(--card);
       color: var(--muted);
@@ -1126,20 +1161,24 @@
       cursor: pointer;
       transition: border-color 0.15s ease, color 0.15s ease;
     }
-    .about-close:hover {
+    .about-close:hover,
+    .compare-close:hover {
       border-color: var(--accent);
       color: var(--accent);
     }
-    .about-body {
+    .about-body,
+    .compare-body {
       font-size: 13px;
       line-height: 1.6;
       color: var(--text);
       font-family: var(--title-font);
     }
-    .about-body p {
+    .about-body p,
+    .compare-body p {
       margin: 0 0 12px;
     }
-    .about-body p:last-child {
+    .about-body p:last-child,
+    .compare-body p:last-child {
       margin-bottom: 0;
     }
     .model-data-row {
@@ -1167,14 +1206,42 @@
       color: var(--accent);
       font-weight: 700;
     }
+    .compare-summary {
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .compare-table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--card);
+    }
+    .compare-table {
+      margin-top: 0;
+    }
+    .compare-table th {
+      text-align: left;
+    }
+    .compare-table td:last-child,
+    .compare-table th:last-child {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .compare-empty {
+      padding: 14px 16px;
+      color: var(--muted);
+    }
     @media (max-width: 550px) {
-      .about-modal-card {
+      .about-modal-card,
+      .compare-modal-card {
         padding: 16px;
       }
-      .about-title {
+      .about-title,
+      .compare-title {
         font-size: 18px;
       }
-      .about-body {
+      .about-body,
+      .compare-body {
         font-size: 14px;
       }
     }
@@ -1310,6 +1377,7 @@
                 <select class="about-model-select model-data-select js-model-select" aria-label="Select model dataset">
                   <option value="">Loading...</option>
                 </select>
+                <button class="text-link-button" id="compareModelsButton" type="button">Compare models</button>
               </div>
             </div>
             <div class="controls-disclaimer">
@@ -1355,6 +1423,36 @@
       </div>
     </div>
   </div>
+  <div id="compareModal" class="compare-modal" aria-hidden="true">
+    <div class="compare-modal-overlay" data-close="compare"></div>
+    <div class="compare-modal-card" role="dialog" aria-modal="true" aria-labelledby="compareTitle">
+      <div class="compare-modal-header">
+        <h2 class="compare-title" id="compareTitle">
+          <span class="title-accent">Compare</span>
+          <span class="brand">Models</span>
+        </h2>
+        <button class="compare-close" id="compareClose" type="button" aria-label="Close">X</button>
+      </div>
+      <div class="compare-body">
+        <p class="compare-summary" id="compareSummary">Loading model comparison…</p>
+        <div class="compare-table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th colspan="2">Model pair</th>
+                <th>Discrepancy (%pt.)</th>
+              </tr>
+            </thead>
+            <tbody id="compareTableBody">
+              <tr>
+                <td colspan="3" class="compare-empty">Loading model comparison…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
     const QUESTIONS = [
@@ -1387,6 +1485,8 @@
     let includeBarrierImmediate = false;
     let includeBarrierDelayed = false;
     let activeTreeFilter = null;
+    const modelEventsCache = new Map();
+    let compareRequestToken = 0;
 
     const TREE_OUTCOME_LABELS = [
       "Jet fire",
@@ -2157,7 +2257,11 @@
     }
 
     function getTreeEvents() {
-      return eventsData.filter((ev) => shouldIncludeEvent(ev));
+      return getTreeEventsFromData(eventsData);
+    }
+
+    function getTreeEventsFromData(events) {
+      return events.filter((ev) => shouldIncludeEvent(ev));
     }
 
     function computeEventCounts() {
@@ -2173,6 +2277,131 @@
     function describeTreeSample(eventsForTree) {
       if (!eventsForTree.length) return "No events available for the tree.";
       return "";
+    }
+
+    function computeTreeDecisionProbabilities(events, treeDefinition, { useWeights = false } = {}) {
+      const decisionDefs = treeDefinition?.decisions || [];
+      const nodeLookup = Object.fromEntries(decisionDefs.map((node) => [node.id, node]));
+      const conditionKey = (conditions) =>
+        JSON.stringify(Object.entries(conditions || {}).sort((a, b) => a[0].localeCompare(b[0])));
+      const matchesCache = new Map();
+      const matchesFor = (conditions) => {
+        const key = conditionKey(conditions);
+        if (matchesCache.has(key)) return matchesCache.get(key);
+        const matches = events.filter((ev) => matchesConditions(ev, conditions));
+        matchesCache.set(key, matches);
+        return matches;
+      };
+
+      return decisionDefs
+        .filter((node) => node.parent)
+        .map((node) => {
+          const parent = nodeLookup[node.parent];
+          const branchKey = parent ? determineBranchKey(node.conditions, parent.conditions) : null;
+          const parentMatches = parent ? matchesFor(parent.conditions) : [];
+          const nodeMatches = matchesFor(node.conditions);
+          const weightFn = (ev) => confidenceWeight(ev, branchKey, useWeights);
+          const parentWeightSum = parentMatches.reduce((sum, ev) => sum + weightFn(ev), 0);
+          const nodeWeightSum = nodeMatches.reduce((sum, ev) => sum + weightFn(ev), 0);
+          return {
+            id: node.id,
+            probability: parentWeightSum > 0 ? nodeWeightSum / parentWeightSum : 0,
+          };
+        });
+    }
+
+    async function loadModelEventsForComparison(model) {
+      if (!model || !model.events_path) return [];
+      if (modelEventsCache.has(model.events_path)) {
+        return modelEventsCache.get(model.events_path);
+      }
+      const response = await fetch(model.events_path, { cache: "no-cache" });
+      if (!response.ok) throw new Error(`Failed to load ${model.events_path}: ${response.statusText}`);
+      const payload = await response.json();
+      if (!Array.isArray(payload)) {
+        throw new Error(`${model.events_path} is not an array`);
+      }
+      modelEventsCache.set(model.events_path, payload);
+      return payload;
+    }
+
+    function renderModelComparisonRows(rows) {
+      const tableBody = document.getElementById("compareTableBody");
+      if (!tableBody) return;
+      if (!rows.length) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="compare-empty">No comparable model pairs available.</td></tr>';
+        return;
+      }
+      tableBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escapeHtml(row.left)}</td>
+          <td>${escapeHtml(row.right)}</td>
+          <td>${row.discrepancy === null ? "&mdash;" : escapeHtml(row.discrepancy.toFixed(1))}</td>
+        </tr>
+      `).join("");
+    }
+
+    async function refreshModelComparison() {
+      const summary = document.getElementById("compareSummary");
+      const tableBody = document.getElementById("compareTableBody");
+      if (!summary || !tableBody) return;
+      if (availableModels.length < 2) {
+        summary.textContent = "Add at least two model datasets to compare them.";
+        tableBody.innerHTML = '<tr><td colspan="3" class="compare-empty">At least two models are required.</td></tr>';
+        return;
+      }
+
+      const requestToken = ++compareRequestToken;
+      summary.textContent = "Loading model comparison…";
+      tableBody.innerHTML = '<tr><td colspan="3" class="compare-empty">Loading model comparison…</td></tr>';
+
+      try {
+        const modelData = await Promise.all(
+          availableModels.map(async (model) => {
+            const events = await loadModelEventsForComparison(model);
+            const treeEvents = getTreeEventsFromData(events);
+            const probabilities = computeTreeDecisionProbabilities(treeEvents, TREE_DEFINITION, {
+              useWeights: useConfidenceWeights,
+            });
+            return {
+              model,
+              probabilityMap: new Map(probabilities.map((entry) => [entry.id, entry.probability])),
+            };
+          })
+        );
+        if (requestToken !== compareRequestToken) return;
+
+        const probabilityIds = TREE_DECISIONS.filter((node) => node.parent).map((node) => node.id);
+        const rows = [];
+        for (let i = 0; i < modelData.length; i++) {
+          for (let j = i + 1; j < modelData.length; j++) {
+            const left = modelData[i];
+            const right = modelData[j];
+            let discrepancySum = 0;
+            let discrepancyCount = 0;
+            probabilityIds.forEach((id) => {
+              const leftValue = left.probabilityMap.get(id);
+              const rightValue = right.probabilityMap.get(id);
+              if (!Number.isFinite(leftValue) || !Number.isFinite(rightValue)) return;
+              discrepancySum += Math.abs(leftValue - rightValue) * 100;
+              discrepancyCount += 1;
+            });
+            rows.push({
+              left: left.model.name || left.model.id,
+              right: right.model.name || right.model.id,
+              discrepancy: discrepancyCount ? discrepancySum / discrepancyCount : null,
+            });
+          }
+        }
+
+        summary.textContent = `Average absolute difference across ${probabilityIds.length} displayed branch probabilities. Filters and confidence weighting match the current tree.`;
+        renderModelComparisonRows(rows);
+      } catch (err) {
+        console.error(err);
+        if (requestToken !== compareRequestToken) return;
+        summary.textContent = "Unable to compare the currently available model datasets.";
+        tableBody.innerHTML = '<tr><td colspan="3" class="compare-empty">Unable to load one or more model datasets.</td></tr>';
+      }
     }
 
     function buildTreeLayout(events, treeDefinition, { useWeights = false, showDistribution = false } = {}) {
@@ -2836,6 +3065,9 @@
         containerId: "treeContainer",
         statusId: "treeStatus",
       });
+      if (document.body.getAttribute("data-compare-open") === "true") {
+        refreshModelComparison();
+      }
     }
 
     function selectEvent(idx) {
@@ -3021,6 +3253,7 @@
 
     function updateModelSelect() {
       const selects = document.querySelectorAll(".js-model-select");
+      const compareButton = document.getElementById("compareModelsButton");
       if (!selects.length) return;
       selects.forEach((select) => {
         select.innerHTML = "";
@@ -3041,6 +3274,9 @@
         select.disabled = availableModels.length <= 1;
         if (activeModelId) select.value = activeModelId;
       });
+      if (compareButton) {
+        compareButton.disabled = availableModels.length < 2;
+      }
     }
 
     function updateModelMeta() {
@@ -3067,6 +3303,7 @@
         if (!response.ok) throw new Error(`Failed to load events: ${response.statusText}`);
         eventsData = await response.json();
         if (!Array.isArray(eventsData)) throw new Error(`${path} is not an array`);
+        modelEventsCache.set(path, eventsData);
         if (eventsData.length === 0) {
           setEmptyState(`No events found in ${path}.`);
           return;
@@ -3154,10 +3391,29 @@
       const modal = document.getElementById("aboutModal");
       if (!modal) return;
       if (open) {
+        document.body.removeAttribute("data-compare-open");
+        const compareModal = document.getElementById("compareModal");
+        if (compareModal) compareModal.setAttribute("aria-hidden", "true");
         document.body.setAttribute("data-about-open", "true");
         modal.setAttribute("aria-hidden", "false");
       } else {
         document.body.removeAttribute("data-about-open");
+        modal.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    function setCompareOpen(open) {
+      const modal = document.getElementById("compareModal");
+      if (!modal) return;
+      if (open) {
+        document.body.removeAttribute("data-about-open");
+        const aboutModal = document.getElementById("aboutModal");
+        if (aboutModal) aboutModal.setAttribute("aria-hidden", "true");
+        document.body.setAttribute("data-compare-open", "true");
+        modal.setAttribute("aria-hidden", "false");
+        refreshModelComparison();
+      } else {
+        document.body.removeAttribute("data-compare-open");
         modal.setAttribute("aria-hidden", "true");
       }
     }
@@ -3187,6 +3443,9 @@
       const aboutButton = document.getElementById("aboutButton");
       const aboutClose = document.getElementById("aboutClose");
       const aboutOverlay = document.querySelector(".about-modal-overlay");
+      const compareButton = document.getElementById("compareModelsButton");
+      const compareClose = document.getElementById("compareClose");
+      const compareOverlay = document.querySelector(".compare-modal-overlay");
       if (aboutButton) {
         aboutButton.addEventListener("click", () => {
           setAboutOpen(true);
@@ -3202,6 +3461,21 @@
           setAboutOpen(false);
         });
       }
+      if (compareButton) {
+        compareButton.addEventListener("click", () => {
+          setCompareOpen(true);
+        });
+      }
+      if (compareClose) {
+        compareClose.addEventListener("click", () => {
+          setCompareOpen(false);
+        });
+      }
+      if (compareOverlay) {
+        compareOverlay.addEventListener("click", () => {
+          setCompareOpen(false);
+        });
+      }
       document.addEventListener("change", (event) => {
         const select = event.target.closest(".js-model-select");
         if (!select) return;
@@ -3210,7 +3484,12 @@
         applyModelSelection(nextId);
       });
       document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && document.body.getAttribute("data-about-open") === "true") {
+        if (event.key !== "Escape") return;
+        if (document.body.getAttribute("data-compare-open") === "true") {
+          setCompareOpen(false);
+          return;
+        }
+        if (document.body.getAttribute("data-about-open") === "true") {
           setAboutOpen(false);
         }
       });
